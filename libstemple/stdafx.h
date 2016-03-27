@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <list>
 #include <map>
 #include <memory>
@@ -22,6 +23,8 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+
+#include <cstring>
 
 #include "InStream.h"
 #include "Macro.h"

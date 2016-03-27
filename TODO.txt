@@ -1,21 +1,20 @@
 TODO:
+$(if <text>)						"", "0", or "false" (case insensitive) are false - everything else is true
+$(elseif <text>)
+$(else)
+$(endif)
 Variable substitution:
 $(<name>:<mods>)						<mods> modify expansion, like csh or bash
-	trim leading or trailing whitespace or both (:x, :f, :b) or $(trim $(<name>))?
-	change case (:l, :u) or $(lower $(<name>))
-	capitalize (:c)	or $(capitalize $(<name>))
-	substitute (/match/replacement/) or $(replace $(<name>),<match>,<replacement>)
-	substring (:offset[:length]) or $(substr $(<name>),offset[,length])
+	:w trim whitespace (:f/:b trim front/back) or $(trim $(<name>))?
+	:l/:u change case or $(lower $(<name>))
+	:c capitalize or $(capitalize $(<name>))
 	:h returns the directory of a path (aka "head")
 	:t returns the filename of a path (aka "tail")
 	:r returns the directory and filename without the last extension (aka "root")
 	:e returns the extension of the path (aka "end")
-	Allow mods to be chained, like :h:h:e
-$(if <text>)						"", "0", or "false" (case insensitive) are false - everything else is true
-$(elseif <text>)
-$(else)
-$(end)									End of 'if', 'while', 'for', or 'foreach'
-$(if <expr_text>, <true_text>[, <false_text>])
+	Allow mods to be chained, eg :h:h:e
+	substitute (/match/replacement/) or $(replace $(<name>),<match>,<replacement>)
+	substring (:offset[:length]) or $(substr $(<name>),offset[,length])
 $(exec <shell_command>)
 $(defined <name>)						"true" else "false"
 $(include <pathname>[, <text>]*)
@@ -26,6 +25,10 @@ $(*[:<offset>[:<length>]])				All arguments (or a subset) [What separator? ' ' o
 $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
 $(// <any_freeform_comment_text>)		Or $(rem ...)?
+$(set <chars>)							Set special chars
+Modifiers to alter special chars (like argsep) for a single directive - useful if arg text contains comma or paren, etc.
+Trim arguments by default? - need modifier to preserve leading whitespace (eg, :n) (or use ,$<whitespace><text> escape after argsep)
+	Or don't trim by default and use :w on macro name
 
 Best practice for reporting errors? (not fatal exceptions)
 Report errors with file/source/line/column location
@@ -37,8 +40,7 @@ Define IFS for array separator
 Error handling
 Verbosity
 Implement stemple command:
-	-D(=| )<text>			Define macro
-	--define(=| )<text>		
+	-D|--define(=| )<text>			Define macro
 	-h|--help				
 	-v|--verbose			
 	-V|--version			
@@ -58,3 +60,4 @@ Make special characters configurable
 $(<name>:=<text>)						Embedded $() are expanded once at definition time (like Make's 'simply expanded' flavor of variable)
 $(<name>+=<text>)						Append
 $(<name>:+=<text>)						Append, 'simply expanded'
+$(if <expr_text>, <true_text>[, <false_text>])

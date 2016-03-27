@@ -84,6 +84,12 @@ namespace stemple
 		}
 
 		//----------------------------------------------------------------------
+		const int GetArgCount ()
+		{
+			return (int)args.size();
+		}
+
+		//----------------------------------------------------------------------
 		const std::string GetArg (int index)
 		{
 			return index >= 0 && (size_t)index < args.size() ? args[index] : "";

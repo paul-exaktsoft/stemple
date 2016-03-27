@@ -22,7 +22,7 @@ namespace stemple
 
 		void Expand (std::ostream &output);
 
-		void AddMacro (const std::string &name, const std::string &body, bool simple = false);
+		void SetMacro (const std::string &name, const std::string &body, bool simple = false);
 
 		void SetSpecialChars (char intro, char open, char close, char argSep);
 
@@ -42,6 +42,8 @@ namespace stemple
 		InStream &inStream ();
 
 		InStream *findInStream (const std::string &prefix);
+
+		InStream *findInStreamWithArgs ();
 
 		bool get (char &c, bool expand = true);
 
@@ -66,16 +68,29 @@ namespace stemple
 
 		bool putback (const char &ch);
 
-		std::list<InStream> inStreams;
+		bool Expander::do_if (const std::vector<std::string> &args);
+		bool Expander::do_else (const std::vector<std::string> &args);
+		bool Expander::do_elseif (const std::vector<std::string> &args);
+		bool Expander::do_endif (const std::vector<std::string> &args);
+
+		std::list<std::shared_ptr<InStream>> inStreams;
 		std::map<std::string, Macro> macros;
+		std::map<std::string, std::function<bool(const std::vector<std::string> &)>> builtins;
+
 		char introChar;				// The start of a directive. Default: '$'
-		char openChar;				// The start of the directive body. Default: '('
-		char closeChar;				// The end of the directive. Default: ')'
+		char openChar;				// The start of a directive body. Default: '('
+		char closeChar;				// The end of a directive. Default: ')'
 		char argSepChar;			// Separator between arguments. Default: ','
 		std::string nameEndChars;	// Set of terminating chars
 		std::string argEndChars;	// Set of terminating chars
 		std::string textEndChars;	// Set of terminating chars
 		bool directiveSeen;			// A directive has been processed on the current line
+
+		// The current character was the last character of this stream, which
+		// was popped off the stack because it was at EOF. If we need to put
+		// back the current character, this stream will have to be pushed back
+		// onto the stack again.
+		std::shared_ptr<InStream> putbackStream;
 	};
 }
 
