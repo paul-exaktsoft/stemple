@@ -14,59 +14,38 @@ namespace stemple
 	class InStream
 	{
 	public:
-		struct Position
-		{
-			int Offset;
-			int Line;
-			int Column;	// Takes into account tabs, UTF-8, etc.
-			static int TabSize;
-			Position (): Offset(0), Line(0), Column(0)
-			{
-			}
-			Position (const Position &other) : Offset(other.Offset), Line(other.Line), Column(other.Column)
-			{
-			}
-			void Increment (char c)
-			{
-				++ Offset;
-				if (c == '\n') {
-					++ Line;
-					Column = 0;
-				} else if (c == '\t') {
-					Column = (Column / TabSize + 1) * TabSize - 1;
-				} else {
-					++ Column;
-				}
-			}
-		};
-
 		//----------------------------------------------------------------------
 		InStream (const std::string &input, const std::string &source,
-				  const std::vector<std::string> &args = {}, bool isolated = false) :
+				  const ArgList &args = {}):
 			base(std::make_shared<std::istringstream>(input)),
-			source(source),
-			args(args),
-			isolated(isolated)
+			position(source),
+			args(args)
 		{
 		}
 
 		//----------------------------------------------------------------------
-		InStream (const std::string &pathname, const std::vector<std::string> &args = {},
-				  std::ios_base::openmode mode = std::ios_base::in, bool isolated = false):
+		InStream (const std::string &input, const Position &position):
+			base(std::make_shared<std::istringstream>(input)),
+			position(position),
+			args(args)
+		{
+		}
+
+		//----------------------------------------------------------------------
+		InStream (const std::string &pathname, const ArgList &args = {},
+				  std::ios_base::openmode mode = std::ios_base::in):
 			base(std::make_shared<std::ifstream>(pathname, mode)),
-			source(pathname),
-			args(args),
-			isolated(isolated)
+			position(pathname),
+			args(args)
 		{
 		}
 
 		//----------------------------------------------------------------------
-		InStream (std::shared_ptr<std::istream> &stream, const std::string &source,
-				  const std::vector<std::string> &args = {}, bool isolated = false) :
-			base(stream),
-			source(source),
-			args(args),
-			isolated(isolated)
+		InStream (std::istream &stream, const std::string &source,
+				  const ArgList &args = {}) :
+			base(std::make_shared<std::istream>(stream.rdbuf())),
+			position(source),
+			args(args)
 		{
 		}
 
@@ -76,21 +55,21 @@ namespace stemple
 		}
 
 		//----------------------------------------------------------------------
-		bool IsIsolated ()
-		{
-			return isolated;
-		}
-
-		//----------------------------------------------------------------------
 		std::istream &GetStream ()
 		{
 			return *base;
 		}
 
 		//----------------------------------------------------------------------
+		const Position &GetPosition ()
+		{
+			return position;
+		}
+
+		//----------------------------------------------------------------------
 		const std::string &GetSource ()
 		{
-			return source;
+			return position.Source;
 		}
 
 		//----------------------------------------------------------------------
@@ -109,7 +88,7 @@ namespace stemple
 		bool get (char &c)
 		{
 			base->get(c);
-			position.Increment(c);
+			position.Update(c);
 			return base->good();
 		}
 
@@ -158,10 +137,8 @@ namespace stemple
 
 	protected:
 		std::shared_ptr<std::istream>	base;
-		const std::string				source;
-		bool							isolated;
 		Position						position;
-		std::vector<std::string>		args;
+		const ArgList					args;
 	};
 }
 

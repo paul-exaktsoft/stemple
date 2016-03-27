@@ -30,6 +30,9 @@
 #include <cstring>
 #include <cstdlib>
 
+#include "Utility.h"
+#include "ArgList.h"
+#include "Position.h"
 #include "InStream.h"
 #include "Macro.h"
 #include "Expander.h"

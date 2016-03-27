@@ -1,8 +1,11 @@
 TODO:
-Get rid of std::shared_ptr for input and output streams
-Maintain a separate putback store with position from original stream for each character
+Get rid of shared_ptr in InStream - InStream => BaseStream, + derived classes to hold ifstream, istringstream (including single-char putback)
+A lighter-weight putback solution for single characters
+Enclosing position reported should be start of directive, not end
+Whitespace putback needs start position (not important because we won't report errors in whitespace!)
 $(not) and $(or) should be n-ary, not just binary
 C-only interface
+$(include) path should be relative to current file path
 Best practice for reporting errors? (not fatal exceptions)
 Report errors with file/source/line/column location
 Best practice for versioning executable
@@ -84,3 +87,5 @@ Implement stemple command:
 	-c|--chars <specials>
 	input output					Files or stdin/stdout (name can be -)
 Cull eof streams just before read - so top stream (and position) stays active all the time c is in play
+Get rid of std::shared_ptr for input and output streams
+Putback store with position from original stream for each character

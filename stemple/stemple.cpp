@@ -16,8 +16,8 @@ int main (int argc, char **argv)
 {
 	std::string input;
 	std::string output;
-	std::shared_ptr<std::istream> inputStream;
-	std::shared_ptr<std::ostream> outputStream;
+	std::unique_ptr<std::istream> inputStream;
+	std::unique_ptr<std::ostream> outputStream;
 
 	if (argc) program = argv[0];
 
@@ -77,10 +77,10 @@ int main (int argc, char **argv)
 
 	// Open input
 	if (input.empty() || input == "-") {
-		inputStream = std::make_shared<std::istream>(std::cin.rdbuf());
+		inputStream = std::make_unique<std::istream>(std::cin.rdbuf());
 		input = "Standard Input";
 	} else {
-		inputStream = std::make_shared<std::ifstream>(input);
+		inputStream = std::make_unique<std::ifstream>(input);
 	}
 	if (!inputStream->good()) {
 		std::cerr << "Cannot open " << input << std::endl;
@@ -89,10 +89,10 @@ int main (int argc, char **argv)
 
 	// Open output
 	if (output.empty() || output == "-") {
-		outputStream = std::make_shared<std::ostream>(std::cout.rdbuf());
+		outputStream = std::make_unique<std::ostream>(std::cout.rdbuf());
 		output = "Standard Output";
 	} else {
-		outputStream = std::make_shared<std::ofstream>(output);
+		outputStream = std::make_unique<std::ofstream>(output);
 	}
 	if (!outputStream->good()) {
 		std::cerr << "Cannot open " << output << std::endl;
@@ -101,7 +101,7 @@ int main (int argc, char **argv)
 
 	// Process
 	try {
-		if (!expander.Expand(inputStream, input, outputStream)) {
+		if (!expander.Expand(*inputStream, input, *outputStream)) {
 			std::cerr << "Error!" << std::endl;
 			exit(1);
 		}

@@ -1,7 +1,7 @@
 // Expander
 // Processes input streams using embedded directives and macro expansions.
 //
-// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
 #pragma once
 #ifndef __stemple__Expander__
@@ -20,7 +20,7 @@ namespace stemple
 
 		std::string Expand (const std::string &input);
 
-		bool Expand (std::shared_ptr<std::istream> &input, const std::string &inputName, std::shared_ptr<std::ostream> &output);
+		bool Expand (std::istream &input, const std::string &inputName, std::ostream &output);
 
 		void SetMacro (const std::string &name, const std::string &body, bool simple = false);
 
@@ -35,7 +35,7 @@ namespace stemple
 
 		std::string collectString (const std::string &delims, bool expand = true);
 
-		std::vector<std::string> collectArgs (bool trim);
+		ArgList collectArgs (bool trim);
 
 		std::string trimWhitespace (const std::string &s);
 
@@ -72,25 +72,25 @@ namespace stemple
 
 		bool putback (const char &c);
 
-		bool putback (const std::string &s, const std::string &streamName, const std::vector<std::string> &args = {});
+		bool putback (const std::string &s, const std::string &streamName, const ArgList &args = {});
 
-		bool do_if (const std::vector<std::string> &args);
-		bool do_else (const std::vector<std::string> &args);
-		bool do_elseif (const std::vector<std::string> &args);
-		bool do_endif (const std::vector<std::string> &args);
-		bool do_env (const std::vector<std::string> &args);
-		bool do_include (const std::vector<std::string> &args);
-		bool do_equal (const std::vector<std::string> &args);
-		bool do_notequal (const std::vector<std::string> &args);
-		bool do_match (const std::vector<std::string> &args);
-		bool do_and (const std::vector<std::string> &args);
-		bool do_or (const std::vector<std::string> &args);
-		bool do_not (const std::vector<std::string> &args);
-		bool do_defined (const std::vector<std::string> &args);
+		bool do_if (const ArgList &args);
+		bool do_else (const ArgList &args);
+		bool do_elseif (const ArgList &args);
+		bool do_endif (const ArgList &args);
+		bool do_env (const ArgList &args);
+		bool do_include (const ArgList &args);
+		bool do_equal (const ArgList &args);
+		bool do_notequal (const ArgList &args);
+		bool do_match (const ArgList &args);
+		bool do_and (const ArgList &args);
+		bool do_or (const ArgList &args);
+		bool do_not (const ArgList &args);
+		bool do_defined (const ArgList &args);
 
-		std::list<std::shared_ptr<InStream>> inStreams;
+		std::list<InStream> inStreams;
 		std::map<std::string, Macro> macros;
-		std::map<std::string, std::function<bool(const std::vector<std::string> &)>> builtins;
+		std::map<std::string, std::function<bool(const ArgList &)>> builtins;
 
 		char introChar;				// The start of a directive. Default: '$'
 		char openChar;				// The start of a directive body. Default: '('

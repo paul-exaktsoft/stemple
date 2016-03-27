@@ -1,96 +1,12 @@
 // Expander
 // Processes input streams looking for embedded directives and macro expansions.
 //
-// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
 #include "stdafx.h"
 
 using namespace std;
 using namespace std::placeholders;
-
-//------------------------------------------------------------------------------
-template<typename... Args>
-inline void DBG (const std::string &fmt, Args... args)
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wformat-security"	// Suppress "warning: format string is not a string literal (potentially insecure)"
-	size_t size = ::snprintf(nullptr, 0, fmt.c_str(), args...) + 1; // Extra space for '\0'
-	std::unique_ptr<char[]> buf(new char[size]);
-	snprintf(buf.get(), size, fmt.c_str(), args...);
-#pragma clang diagnostic pop
-
-#if defined _WIN32
-	OutputDebugStringA(buf.get());
-#else
-//	printf("%s", buf.get());
-#endif
-}
-
-//------------------------------------------------------------------------------
-inline char *printchar (const char &c)
-{
-	static char buf[5];
-	if (c == '\t') {
-		strcpy(buf, "\\t");
-	} else if (c == '\n') {
-		strcpy(buf, "\\n");
-	} else if (c < ' ') {
-		snprintf(buf, 5, "0x%02X", c);
-	} else {
-		buf[0] = c;
-		buf[1] = '\0';
-	}
-	return buf;
-}
-
-//------------------------------------------------------------------------------
-inline bool compare (const string &a, const string &b, bool ignoreCase = false)
-{
-	if (a.size() != b.size()) {
-		return false;
-	}
-	if (ignoreCase) {
-		for (auto ia = begin(a), ib = begin(b); ia != end(a); ++ ia, ++ ib) {
-			if (tolower(*ia) != tolower(*ib)) return false;
-		}
-		return true;
-	} else {
-		return a.compare(b) == 0;
-	}
-}
-
-//--------------------------------------------------------------------------
-inline bool textToBool (const std::string &text)
-{
-	// TODO: trim text before comparison?
-	return 	!(text == "" ||
-			  text == "0" ||
-			  compare(text, "false", true) ||
-			  compare(text, "no", true));
-}
-
-//------------------------------------------------------------------------------
-// An RAII helper class that temporarily sets a variable and restores its old
-// value when the helper goes out of scope.
-
-template<typename T>
-class variable_guard
-{
-public:
-	variable_guard (T &variable, const T &new_value) :
-		variable(variable),
-		initial_value(variable)
-	{
-		variable = new_value;
-	}
-	~variable_guard ()
-	{
-		variable = initial_value;
-	}
-private:
-	T &variable;
-	T initial_value;
-};
 
 //==============================================================================
 //==============================================================================
@@ -152,10 +68,10 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::Expand (shared_ptr<istream> &input, const string &inputName, shared_ptr<ostream> &output)
+	bool Expander::Expand (istream &input, const string &inputName, ostream &output)
 	{
-		inStreams.push_front(make_shared<InStream>(input, inputName));
-		expand(*output);
+		inStreams.push_front(InStream(input, inputName));
+		expand(output);
 		return true;
 	}
 
@@ -210,7 +126,7 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	string Expander::expand (const string &inputString, const string &source)
 	{
-		putback(inputString, source);
+		inStreams.push_front(InStream(inputString, source));
 		ostringstream output;
 		expand(output);
 		return output.str();
@@ -239,7 +155,7 @@ namespace stemple
 			return false;
 		}
 
-		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front()->GetSource().c_str());
+		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front().GetPosition().GetCString());
 
 		if (x == escapeChar) {
 			// Handle escape
@@ -295,7 +211,7 @@ end:
 		// We've seen opening "$(", now collect first token
 		string name = collectString(nameEndChars);
 
-		vector<string> args;
+		ArgList args;
 
 		{
 			// If this is an elseif directive, temporarily disable skipping so
@@ -356,7 +272,7 @@ end:
 				InStream *baseStream = findInStreamWithArgs();
 				if (baseStream) {
 					int index = atoi(name.c_str()) - 1;
-					putback(baseStream->GetArg(index), baseStream->GetSource() + ", arg " + name);
+					putback(baseStream->GetArg(index), string("Expansion of ") + baseStream->GetSource() + ", arg " + name);
 					return true;
 				}
 			} else {
@@ -365,7 +281,7 @@ end:
 				if (macroEntry != end(macros)) {
 					string text = macroEntry->second.GetBody();
 					if (text.length()) {
-						putback(macroEntry->second.GetBody(), string("Body of ") + name, args);
+						putback(macroEntry->second.GetBody(), string("Expansion of ") + name, args);
 					}
 					return true;
 				}
@@ -414,9 +330,9 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	vector<string> Expander::collectArgs (bool trim)
+	ArgList Expander::collectArgs (bool trim)
 	{
-		vector<string> args;
+		ArgList args;
 		char c;
 		do {
 			string arg = collectString(argEndChars);
@@ -516,7 +432,7 @@ end:
 	//--------------------------------------------------------------------------
 	InStream &Expander::inStream ()
 	{
-		return *inStreams.front();
+		return inStreams.front();
 	}
 
 	//--------------------------------------------------------------------------
@@ -526,9 +442,9 @@ end:
 	InStream *Expander::findInStream (const string &prefix)
 	{
 		for (auto &is : inStreams) {
-			const string &source = is->GetSource();
+			const string &source = is.GetSource();
 			if (source.compare(0, prefix.length(), prefix) == 0) {
-				return is.get();
+				return &is;
 			}
 		}
 		return nullptr;
@@ -541,8 +457,8 @@ end:
 	InStream *Expander::findInStreamWithArgs ()
 	{
 		for (auto &is : inStreams) {
-			if (is->GetArgCount()) {
-				return is.get();
+			if (is.GetArgCount()) {
+				return &is;
 			}
 		}
 		return nullptr;
@@ -561,18 +477,20 @@ end:
 		// my Mac OS X port, it seems to always fail). So maintain a separate
 		// putback area. The simplest way to do this is to push a new InStream.
 		// TODO: Optimize single-character putback to use a lighter-weight mechanism?
-		return putback(string(1, c), "Putback");
-	}
-
-	//--------------------------------------------------------------------------
-	bool Expander::putback (const string &s, const string &streamName, const vector<string> &args)
-	{
-		inStreams.push_front(make_shared<InStream>(s, streamName, args));
+		DBG("putback()\n");
+		inStreams.push_front(InStream(string(1, c), Position(inStream().GetPosition()).Putback()));
 		return good();
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_if (const vector<string> &args)
+	bool Expander::putback (const string &s, const string &streamName, const ArgList &args)
+	{
+		inStreams.push_front(InStream(s, streamName, args));
+		return good();
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_if (const ArgList &args)
 	{
 		bool testResult = false;
 		if (args.size() > 0) {
@@ -603,7 +521,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_else (const vector<string> &args)
+	bool Expander::do_else (const ArgList &args)
 	{
 		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
 			if (!ifContext.top().branchTaken) {
@@ -625,7 +543,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_elseif (const vector<string> &args)
+	bool Expander::do_elseif (const ArgList &args)
 	{
 		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
 			if (!ifContext.top().branchTaken) {
@@ -661,7 +579,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_endif (const vector<string> &args)
+	bool Expander::do_endif (const ArgList &args)
 	{
 		if (ifContext.size()) {
 			if (ifContext.top().isSkipping) {
@@ -676,7 +594,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_env (const vector<string> &args)
+	bool Expander::do_env (const ArgList &args)
 	{
 		if (args.size() && args[0].size()) {
 			const char *env = getenv(args[0].c_str());
@@ -691,11 +609,11 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_include (const vector<string> &args)
+	bool Expander::do_include (const ArgList &args)
 	{
 		if (args.size() && args[0].size()) {
 			const vector<string> restArgs(args.begin() + 1, args.end());
-			inStreams.push_front(make_shared<InStream>(args[0], restArgs));
+			inStreams.push_front(InStream(args[0], restArgs));
 			return inStream().GetStream().good();
 		} else {
 			// TODO: Report error
@@ -706,7 +624,7 @@ end:
 	//--------------------------------------------------------------------------
 	// TODO: support :i input modifier
 
-	bool Expander::do_equal (const vector<string> &args)
+	bool Expander::do_equal (const ArgList &args)
 	{
 		if (args.size() > 1) {
 			putback(compare(args[0], args[1]) ? "1" : "0", "Equal result");
@@ -721,7 +639,7 @@ end:
 	//--------------------------------------------------------------------------
 	// TODO: support :i input modifier
 
-	bool Expander::do_notequal (const vector<string> &args)
+	bool Expander::do_notequal (const ArgList &args)
 	{
 		if (args.size() > 1) {
 			putback(!compare(args[0], args[1]) ? "1" : "0", "Notequal result");
@@ -737,7 +655,7 @@ end:
 	// Uses modified ECMAScript: http://en.cppreference.com/w/cpp/regex/ecmascript
 	// TODO: support :i input modifier
 
-	bool Expander::do_match (const vector<string> &args)
+	bool Expander::do_match (const ArgList &args)
 	{
 		if (args.size() > 1) {
 			regex pattern(args[1] /*, regex_constants::icase*/);
@@ -752,7 +670,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_and (const vector<string> &args)
+	bool Expander::do_and (const ArgList &args)
 	{
 		if (args.size() > 1) {
 			putback(textToBool(args[0]) && textToBool(args[1]) ? "1" : "0", "And result");
@@ -765,7 +683,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_or (const vector<string> &args)
+	bool Expander::do_or (const ArgList &args)
 	{
 		if (args.size() > 1) {
 			putback(textToBool(args[0]) || textToBool(args[1]) ? "1" : "0", "Or result");
@@ -778,7 +696,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_not (const vector<string> &args)
+	bool Expander::do_not (const ArgList &args)
 	{
 		if (args.size() == 1) {
 			putback(!textToBool(args[0]) ? "1" : "0", "Not result");
@@ -791,7 +709,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_defined (const vector<string> &args)
+	bool Expander::do_defined (const ArgList &args)
 	{
 		if (args.size() == 1) {
 			bool defined = false;

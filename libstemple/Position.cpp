@@ -7,5 +7,5 @@
 
 namespace stemple
 {
-	int InStream::Position::TabSize = 8;
+	int Position::TabSize = 8;
 }

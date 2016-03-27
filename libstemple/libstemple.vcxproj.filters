@@ -33,6 +33,15 @@
     <ClInclude Include="stemple.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ArgList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Position.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -41,7 +50,7 @@
     <ClCompile Include="Expander.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InStream.cpp">
+    <ClCompile Include="Position.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
