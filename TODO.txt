@@ -1,13 +1,12 @@
 TODO:
-Get rid of shared_ptr in InStream - InStream => BaseStream, + derived classes to hold ifstream, istringstream (including single-char putback)
-A lighter-weight putback solution for single characters
-Enclosing position reported should be start of directive, not end
-Whitespace putback needs start position (not important because we won't report errors in whitespace!)
-$(not) and $(or) should be n-ary, not just binary
-C-only interface
 $(include) path should be relative to current file path
-Best practice for reporting errors? (not fatal exceptions)
 Report errors with file/source/line/column location
+	Best practice for reporting errors? (not fatal exceptions)
+	Enclosing position reported should be start of directive, not end
+	Whitespace putback needs start position (not important because we won't report errors in whitespace!)
+C-only interface
+Pool of CharStreams for optimized putback
+$(not) and $(or) should be n-ary, not just binary
 Best practice for versioning executable
 Memory leak detection for unit tests
 Variable substitution:
@@ -17,12 +16,12 @@ $(<name>:<mods>)						<mods> modify expansion, like csh
 	:l/:u change case or $(lower $(<name>))
 	:c capitalize or $(capitalize $(<name>))
 	:i [input] ignore case (for $(equals), etc.)
+	:s/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
+	:offset[:length] substring or $(substr $(<name>),offset[,length])
 	:h returns the directory of a path (aka "head")
 	:t returns the filename of a path (aka "tail")
 	:r returns the directory and filename without the last extension (aka "root")
 	:e returns the extension of the path (aka "end")
-	:s/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
-	:offset[:length] substring or $(substr $(<name>),offset[,length])
 Allow mods to be chained, eg :h:h:e
 $(exec <shell_command>)
 $((<expr>))								Substitute result of evaluated arithmetic expression
@@ -88,4 +87,6 @@ Implement stemple command:
 	input output					Files or stdin/stdout (name can be -)
 Cull eof streams just before read - so top stream (and position) stays active all the time c is in play
 Get rid of std::shared_ptr for input and output streams
-Putback store with position from original stream for each character
+Putback has position from original stream for each character
+Get rid of shared_ptr in InStream - InStream => BaseStream, + derived classes to hold ifstream, istringstream (including single-char putback)
+A lighter-weight putback solution for single characters

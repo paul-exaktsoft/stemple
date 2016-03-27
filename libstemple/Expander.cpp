@@ -70,7 +70,7 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	bool Expander::Expand (istream &input, const string &inputName, ostream &output)
 	{
-		inStreams.push_front(InStream(input, inputName));
+		inStreams.push_front(make_shared<CopiedStream>(input, inputName));
 		expand(output);
 		return true;
 	}
@@ -126,7 +126,7 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	string Expander::expand (const string &inputString, const string &source)
 	{
-		inStreams.push_front(InStream(inputString, source));
+		inStreams.push_front(make_shared<StringStream>(inputString, source));
 		ostringstream output;
 		expand(output);
 		return output.str();
@@ -155,7 +155,7 @@ namespace stemple
 			return false;
 		}
 
-		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front().GetPosition().GetCString());
+		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front()->GetPosition().GetCString());
 
 		if (x == escapeChar) {
 			// Handle escape
@@ -189,6 +189,12 @@ namespace stemple
 end:
 		c = x;
 		return true; //good();
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::good ()
+	{
+		return inStreams.size() && inStream().good();
 	}
 
 	//--------------------------------------------------------------------------
@@ -432,7 +438,7 @@ end:
 	//--------------------------------------------------------------------------
 	InStream &Expander::inStream ()
 	{
-		return inStreams.front();
+		return *inStreams.front();
 	}
 
 	//--------------------------------------------------------------------------
@@ -442,9 +448,9 @@ end:
 	InStream *Expander::findInStream (const string &prefix)
 	{
 		for (auto &is : inStreams) {
-			const string &source = is.GetSource();
+			const string &source = is->GetSource();
 			if (source.compare(0, prefix.length(), prefix) == 0) {
-				return &is;
+				return is.get();
 			}
 		}
 		return nullptr;
@@ -457,8 +463,8 @@ end:
 	InStream *Expander::findInStreamWithArgs ()
 	{
 		for (auto &is : inStreams) {
-			if (is.GetArgCount()) {
-				return &is;
+			if (is->GetArgCount()) {
+				return is.get();
 			}
 		}
 		return nullptr;
@@ -478,14 +484,14 @@ end:
 		// putback area. The simplest way to do this is to push a new InStream.
 		// TODO: Optimize single-character putback to use a lighter-weight mechanism?
 		DBG("putback()\n");
-		inStreams.push_front(InStream(string(1, c), Position(inStream().GetPosition()).Putback()));
+		inStreams.push_front(make_shared<CharStream>(c, Position(inStream().GetPosition()).Putback()));
 		return good();
 	}
 
 	//--------------------------------------------------------------------------
 	bool Expander::putback (const string &s, const string &streamName, const ArgList &args)
 	{
-		inStreams.push_front(InStream(s, streamName, args));
+		inStreams.push_front(make_shared<StringStream>(s, streamName, args));
 		return good();
 	}
 
@@ -613,8 +619,8 @@ end:
 	{
 		if (args.size() && args[0].size()) {
 			const vector<string> restArgs(args.begin() + 1, args.end());
-			inStreams.push_front(InStream(args[0], restArgs));
-			return inStream().GetStream().good();
+			inStreams.push_front(make_shared<FileStream>(args[0], restArgs));
+			return inStream().good();
 		} else {
 			// TODO: Report error
 			return false;

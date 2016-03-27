@@ -53,22 +53,9 @@ namespace stemple
 
 		int peek ();
 
-		bool good ()
-		{
-			return inStreams.size() && inStream().good();
-		}
+		bool good ();
 
 		bool eof ();
-
-		bool fail ()
-		{
-			return !inStreams.size() || inStream().fail();
-		}
-
-		bool bad ()
-		{
-			return !inStreams.size() || inStream().bad();
-		}
 
 		bool putback (const char &c);
 
@@ -88,7 +75,7 @@ namespace stemple
 		bool do_not (const ArgList &args);
 		bool do_defined (const ArgList &args);
 
-		std::list<InStream> inStreams;
+		std::list<std::shared_ptr<InStream>> inStreams;
 		std::map<std::string, Macro> macros;
 		std::map<std::string, std::function<bool(const ArgList &)>> builtins;
 
@@ -102,9 +89,9 @@ namespace stemple
 		std::string textEndChars;	// Set of terminating chars
 		bool trimArgs;				// Trim whitespace from argument strings by default
 		bool directiveSeen;			// A directive has been processed on the current line
-		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/else/elseif
+		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/elseif/else
 
-		// A stack of descriptors for processing nested block if/else/elseifs
+		// A stack of descriptors for processing nested block ifs/elseifs/elses
 		struct IfContext
 		{
 			enum Phase { ElseOrEnd, EndOnly};

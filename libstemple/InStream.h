@@ -1,5 +1,7 @@
 // InStream
-// Input stream tagged with annotation like source (file or macro), line, column, etc.
+// Input stream tagged with annotation like source name (file or macro), line,
+// column, etc. An InStream is created for each expansion of a macro body and
+// holds the list of arguments given to the macro directive.
 //
 // Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
@@ -11,40 +13,14 @@
 
 namespace stemple
 {
+	//==========================================================================
+	//==========================================================================
 	class InStream
 	{
 	public:
 		//----------------------------------------------------------------------
-		InStream (const std::string &input, const std::string &source,
-				  const ArgList &args = {}):
-			base(std::make_shared<std::istringstream>(input)),
-			position(source),
-			args(args)
-		{
-		}
-
-		//----------------------------------------------------------------------
-		InStream (const std::string &input, const Position &position):
-			base(std::make_shared<std::istringstream>(input)),
+		InStream (const Position &position, const ArgList &args) :
 			position(position),
-			args(args)
-		{
-		}
-
-		//----------------------------------------------------------------------
-		InStream (const std::string &pathname, const ArgList &args = {},
-				  std::ios_base::openmode mode = std::ios_base::in):
-			base(std::make_shared<std::ifstream>(pathname, mode)),
-			position(pathname),
-			args(args)
-		{
-		}
-
-		//----------------------------------------------------------------------
-		InStream (std::istream &stream, const std::string &source,
-				  const ArgList &args = {}) :
-			base(std::make_shared<std::istream>(stream.rdbuf())),
-			position(source),
 			args(args)
 		{
 		}
@@ -52,12 +28,6 @@ namespace stemple
 		//----------------------------------------------------------------------
 		virtual ~InStream ()
 		{
-		}
-
-		//----------------------------------------------------------------------
-		std::istream &GetStream ()
-		{
-			return *base;
 		}
 
 		//----------------------------------------------------------------------
@@ -85,60 +55,209 @@ namespace stemple
 		}
 
 		//----------------------------------------------------------------------
+		virtual bool get (char &c) = 0;
+
+		//----------------------------------------------------------------------
+		virtual int peek () = 0;
+
+		//----------------------------------------------------------------------
+		virtual bool good () = 0;
+
+		//----------------------------------------------------------------------
+		virtual bool eof () = 0;
+
+		//----------------------------------------------------------------------
+		virtual bool putback (const char &ch) = 0;
+
+	protected:
+		Position		position;
+		const ArgList	args;
+	};
+
+	//==========================================================================
+	//==========================================================================
+	class StreamStream : public InStream
+	{
+	public:
+		//----------------------------------------------------------------------
+		StreamStream (std::istream	&base, const Position &position, const ArgList &args) :
+			InStream(position, args),
+			base(base)
+		{
+		}
+
+		//----------------------------------------------------------------------
+		virtual ~StreamStream ()
+		{
+		}
+
+		//----------------------------------------------------------------------
 		bool get (char &c)
 		{
-			base->get(c);
+			base.get(c);
 			position.Update(c);
-			return base->good();
+			return base.good();
 		}
 
 		//----------------------------------------------------------------------
 		int peek ()
 		{
-			return base->peek();
+			return base.peek();
 		}
 
 		//----------------------------------------------------------------------
 		bool good ()
 		{
-			return base->good();
+			return base.good();
 		}
 
 		//----------------------------------------------------------------------
 		bool eof ()
 		{
-			return base->eof();
-		}
-
-		//----------------------------------------------------------------------
-		bool fail ()
-		{
-			return base->fail();
-		}
-
-		//----------------------------------------------------------------------
-		bool bad ()
-		{
-			return base->bad();
+			return base.eof();
 		}
 
 		//----------------------------------------------------------------------
 		bool putback (const char &ch)
 		{
-			base->putback(ch);
-			return base->good();
-		}
-
-		//----------------------------------------------------------------------
-		std::streampos tellg ()
-		{
-			return base->tellg();
+			base.putback(ch);
+			return base.good();
 		}
 
 	protected:
-		std::shared_ptr<std::istream>	base;
-		Position						position;
-		const ArgList					args;
+		std::istream	&base;
+	};
+
+	//==========================================================================
+	//==========================================================================
+	class FileStream : public StreamStream
+	{
+	public:
+		//----------------------------------------------------------------------
+		FileStream (const std::string &pathname, const ArgList &args = {},
+					std::ios_base::openmode mode = std::ios_base::in) :
+			stream(pathname, mode),
+			StreamStream(stream, pathname, args)
+		{
+		}
+
+		//----------------------------------------------------------------------
+		virtual ~FileStream ()
+		{
+		}
+
+	protected:
+		std::ifstream	stream;
+	};
+
+	//==========================================================================
+	//==========================================================================
+	class StringStream : public StreamStream
+	{
+	public:
+		//----------------------------------------------------------------------
+		StringStream (const std::string &input, const Position &position,
+					  const ArgList &args = {}) :
+			stream(input),
+			StreamStream(stream, position, args)
+		{
+		}
+
+		//----------------------------------------------------------------------
+		virtual ~StringStream ()
+		{
+		}
+
+	protected:
+		std::istringstream	stream;
+	};
+
+	//==========================================================================
+	//==========================================================================
+	class CopiedStream : public StreamStream
+	{
+	public:
+		//----------------------------------------------------------------------
+		CopiedStream (std::istream &input, const Position &position,
+					  const ArgList &args = {}) :
+			stream(input.rdbuf()),
+			StreamStream(stream, position, args)
+		{
+		}
+
+		//----------------------------------------------------------------------
+		virtual ~CopiedStream ()
+		{
+		}
+
+	protected:
+		std::istream	stream;
+	};
+
+	//==========================================================================
+	//==========================================================================
+	class CharStream : public InStream
+	{
+	public:
+		//----------------------------------------------------------------------
+		CharStream (char c, const Position &position) :
+			InStream(position, {}),
+			pbc(c),
+			done(false)
+		{
+		}
+
+		//----------------------------------------------------------------------
+		virtual ~CharStream ()
+		{
+		}
+
+		//----------------------------------------------------------------------
+		bool get (char &c)
+		{
+			if (!done) {
+				c = pbc;
+				done = true;
+				position.Update(pbc);
+				return true;
+			} else {
+				c = std::char_traits<char>::eof();
+				return false;
+			}
+		}
+
+		//----------------------------------------------------------------------
+		int peek ()
+		{
+			return !done ? pbc : std::char_traits<char>::eof();
+		}
+
+		//----------------------------------------------------------------------
+		bool good ()
+		{
+			return !done;
+		}
+
+		//----------------------------------------------------------------------
+		bool eof ()
+		{
+			return !done;
+		}
+
+		//----------------------------------------------------------------------
+		bool putback (const char &ch)
+		{
+			if (done) {
+				done = false;
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+	protected:
+		char pbc;
+		bool done;
 	};
 }
 
