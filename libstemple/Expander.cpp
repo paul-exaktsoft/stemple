@@ -77,14 +77,11 @@ namespace stemple
 
 	//--------------------------------------------------------------------------
 	Expander::Expander ():
-		introChar('$'),
-		openChar('('),
-		closeChar(')'),
-		argSepChar(','),
+		trimArgs(true),
 		directiveSeen(false),
 		skipping(0)
 	{
-		SetSpecialChars(introChar, openChar, closeChar, argSepChar);
+		SetSpecialChars('$', '(', ')', ',', '$');
 		builtins = {
 			{ "if",		bind(&Expander::do_if,		this, _1) },
 			{ "else",	bind(&Expander::do_else,	this, _1) },
@@ -99,12 +96,13 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
-	void Expander::SetSpecialChars (char intro, char open, char close, char argSep)
+	void Expander::SetSpecialChars (char intro, char open, char close, char argSep, char escape)
 	{
 		introChar = intro;
 		openChar = open;
 		closeChar = close;
 		argSepChar = argSep;
+		escapeChar = escape;
 		(nameEndChars = " \t:+=") += closeChar;
 		(argEndChars = argSepChar) += closeChar;
 		textEndChars = closeChar;
@@ -205,9 +203,24 @@ namespace stemple
 			putbackStream = nullptr;
 		}
 
-		// Handle macro expansion and stemple directives
-		if (expand && x == introChar) {
-			if (!eof()) {
+		if (!eof()) {
+			if (x == escapeChar) {
+				// Handle escape
+				char p = peek();
+				if (p == introChar || p == escapeChar) {
+					// Escaped '$' cannot start a macro
+					if (!inStream().get(x)) return false;	// Eat '$' so it doesn't trigger a macro on the next call
+					goto end;
+				} else if (p == '\n') {
+					// Escaped newline causes blank line to be output, even if
+					// it contains only a non-printing directive
+					directiveSeen = false;
+					get(x);	// Get the newline, skipping the escape
+					goto end;
+				}
+			}
+			if (expand && x == introChar) {
+				// Handle macro expansion and stemple directives
 				if (peek() == openChar) {
 					// Start of a stemple directive
 					if (get(x)) {	// Eat opening '('
@@ -218,17 +231,10 @@ namespace stemple
 							return false;
 						}
 					}
-				} else if (peek() == introChar) {
-					// Escaped '$' cannot start a macro
-					get(x, false);	// Eat next '$' so it doesn't trigger a macro on the next call
-				} else if (peek() == '\n') {
-					// Escaped newline causes blank line to be output, even if
-					// it contains only a non-printing directive
-					directiveSeen = false;
-					get(x);	// Get the newline, skipping the '$'
 				}
 			}
 		}
+end:
 		c = x;
 		return true; //good();
 	}
@@ -266,7 +272,7 @@ namespace stemple
 			switch (tok) {
 			case ARGS:
 				{
-					args = collectArgs();
+					args = collectArgs(trimArgs);
 					tok = getToken();	// Get closing ')'
 				}
 				break;
@@ -344,25 +350,35 @@ namespace stemple
 		ostringstream output;
 		char c;
 		while (get(c, expand)) {
-			if (!nested && delims.find(c) != string::npos) {
+			bool escaped = false;
+			if (c == escapeChar) {
+				char p = peek();
+				// If escaping a delimiter, skip the escape and get the delimiter,
+				// else just keep the escape
+				if (delims.find(p) != string::npos) {
+					get(c, expand);
+					escaped = true;
+				}
+			} else if (!nested && delims.find(c) != string::npos) {
 				putback(c);
 				break;
-			} else {
-				if (!expand) {
-					if (c == openChar) {
-						++ nested;
-					} else if (c == closeChar) {
-						-- nested;
-					}
-				}
-				output.put(c);
 			}
+			if (!expand && !escaped) {
+				// Keep track of nested directives when not expanding
+				// TODO: This is not really tracking directives, just ( and )
+				if (c == openChar) {
+					++ nested;
+				} else if (c == closeChar) {
+					-- nested;
+				}
+			}
+			output.put(c);
 		}
 		return output.str();
 	}
 
 	//--------------------------------------------------------------------------
-	vector<string> Expander::collectArgs ()
+	vector<string> Expander::collectArgs (bool trim)
 	{
 		vector<string> args;
 		char c;

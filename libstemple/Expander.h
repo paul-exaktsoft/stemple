@@ -24,7 +24,7 @@ namespace stemple
 
 		void SetMacro (const std::string &name, const std::string &body, bool simple = false);
 
-		void SetSpecialChars (char intro, char open, char close, char argSep);
+		void SetSpecialChars (char intro, char open, char close, char argSep, char escape);
 
 	protected:
 		std::string expand (const std::string &input, const std::string &source);
@@ -33,7 +33,7 @@ namespace stemple
 
 		std::string collectString (const std::string &delims, bool expand = true);
 
-		std::vector<std::string> collectArgs ();
+		std::vector<std::string> collectArgs (bool trim);
 
 		enum Token { ARGS, ASSIGN, APPEND, MOD, SIMPLE_ASSIGN, SIMPLE_APPEND, CLOSE, END, ERR };
 
@@ -81,9 +81,11 @@ namespace stemple
 		char openChar;				// The start of a directive body. Default: '('
 		char closeChar;				// The end of a directive. Default: ')'
 		char argSepChar;			// Separator between arguments. Default: ','
+		char escapeChar;			// Escapes other special chars. Default '$'
 		std::string nameEndChars;	// Set of terminating chars
 		std::string argEndChars;	// Set of terminating chars
 		std::string textEndChars;	// Set of terminating chars
+		bool trimArgs;				// Trim whitespace from argument strings by default
 		bool directiveSeen;			// A directive has been processed on the current line
 		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/else/elseif
 

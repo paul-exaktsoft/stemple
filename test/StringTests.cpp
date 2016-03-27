@@ -78,12 +78,20 @@ TEST_F(StringTests, PreventLineSkipping)
 	ASSERT_EQ("\n\t  $ \n \n aaa\n", expansion);
 }
 
-TEST_F(StringTests, SetSpecialChars)
+TEST_F(StringTests, SetCustomSpecialChars)
 {
-	expander.SetSpecialChars('%', '{', '}', ';');
+	expander.SetSpecialChars('%', '{', '}', ';', '\\');
 	expander.SetMacro("list", "[%{1}, %{2}, $(3)]");
-	string expansion = expander.Expand("%{A=aaa}\n%%{A}: %{A}\nList: %{list one;two;three}.\nOld-style: $(list one,two,three).");
+	string expansion = expander.Expand("%{A=aaa}\n\\%{A}: %{A}\nList: %{list one;two;three}.\nOld-style: $(list one,two,three).");
 	ASSERT_EQ("%{A}: aaa\nList: [one, two, $(3)].\nOld-style: $(list one,two,three).", expansion);
+}
+
+TEST_F(StringTests, PreventLineSkippingWithCustomEscape)
+{
+	expander.SetSpecialChars('$', '(', ')', ',', '\\');
+	// Escape has to be immediately before the newline or it's just output as text
+	string expansion = expander.Expand("$(A=aaa)\\\n\t  $(B=bbb)\\ \n$(C=ccc) \\\n $(A)\n");
+	ASSERT_EQ("\n\t  \\ \n \n aaa\n", expansion);
 }
 
 TEST_F(StringTests, SimplyExpandedMacros)
@@ -243,4 +251,18 @@ TEST_F(StringTests, BlockElseifs)
 	expander.SetMacro("C", "no");
 	expansion = expander.Expand(input);
 	ASSERT_EQ("Before\n  Nothing True\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, MacroWithArgumentsEscapingDelimters)
+{
+	expander.SetMacro("args", "'$(1)'; '$(2)'");
+	string expansion = expander.Expand("Args: $(args one$,two,three$)).");
+	ASSERT_EQ("Args: 'one,two'; 'three)'.", expansion);
+}
+
+TEST_F(StringTests, MacroWithArgumentsEscapingDelimtersInsideAssignment)
+{
+	expander.SetMacro("args", "'$(1)'; '$(2)'");
+	string expansion = expander.Expand("$(M=Args: $(args one$,two,three$$$)).)$(M)");
+	ASSERT_EQ("Args: 'one,two'; 'three)'.", expansion);
 }
