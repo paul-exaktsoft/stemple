@@ -21,27 +21,15 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Expander.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InStream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Macro.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stemple.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Expander.cpp">
+    <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InStream.cpp">
+    <ClCompile Include="StringTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,28 +1,36 @@
 TODO:
 Variable substitution:
-[<whitespace>]$(...)<nl>		Line is ignored (allows $() on a line by itself without adding a blank line to the output)
-[<whitespace>]$(...)$<nl>		Newline is output - line is not ignored
-$(<name>=<text>)				<text> can containing leading whitespace. Embedded $()s are expanded recursively when body is expanded
-$(<name>:=<text>)				Embedded $() are expanded once at definition time (like Make's 'simply expanded' flavor of variable)
-$(<name>+=<text>)				Append
-$(<name>:+=<text>)				Append - 'simply expanded'
-$(<name>:<mods>)				<mods> modify expansion, like csh or bash
+[<whitespace>]$(...)<nl>				Line is ignored (allows $() on a line by itself without adding a blank line to the output)
+[<whitespace>]$(...)$<nl>				Newline is output - line is not ignored
+$(<name>=<text>)						<text> can containing leading whitespace. Embedded $()s are expanded recursively when body is expanded
+$(<name>:=<text>)						Embedded $() are expanded once at definition time (like Make's 'simply expanded' flavor of variable)
+$(<name>+=<text>)						Append
+$(<name>:+=<text>)						Append - 'simply expanded'
+$(<name>:<mods>)						<mods> modify expansion, like csh or bash
 	trim leading or trailing whitespace or both (:t[f|b]*) or $(trim $(<name>))?
 	change case (:l, :u) or $(lower $(<name>))
 	capitalize (:c)	or $(capitalize $(<name>))
 	substitute (/match/replacement/) or $(replace $(<name>),<match>,<replacement>)
 	substring (:offset[:length]) or $(substr $(<name>),offset[,length])
-$(if <text>)					"", "0", or "false" (case insensitive) are false - everything else is true
+$(if <text>)						"", "0", or "false" (case insensitive) are false - everything else is true
 $(elseif <text>)
 $(else)
-$(end)							End of 'if', 'while', 'for', or 'foreach'
+$(end)									End of 'if', 'while', 'for', or 'foreach'
 $(if <expr_text>, <true_text>[, <false_text>])
 $(exec <shell_command>)
-$(defined <name>)				"true" else "false"
-$(include <pathname>[, <text>]...)
-$(if <expr>)					<expr> is arithmetic or logical expression
+$(defined <name>)						"true" else "false"
+$(include <pathname>[, <text>]*)
+$(if <expr>)							<expr> is arithmetic or logical expression
 $(env <var>)
-$((<expr>))						Substitute result of evaluated arithmetic expression
+$((<expr>))								Substitute result of evaluated arithmetic expression
+$(*[:<offset>[:<length>]])				All arguments (or a subset) [What separator? ' ' or ','? Or user-defined?]
+$(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
+$(foreach NAME, <text>[, <text>]*)...$(end)
+$(// <any_freeform_comment_text>)		Or $(rem ...)?
+
+Google Test/Mock unit tests
+CMakeLists.txt
+Test in Xcode and Linux Makefile
 Define IFS for array separator
 Add unit tests using Google Test/Mock
 Error handling
@@ -36,7 +44,7 @@ Implement stemple command:
 	<pathname>...			Files to expand
 
 DONE:
-$(<name>)						<name> is just text, so can contain $() expansions too. <name> cannot contain spaces
+$(<name>)						<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
 $$(...							Literal (escaped) "$("
 $(<name> <text>[, <text>]...)	<text> can contain $() expansions too, text can contain spaces. (Leading spaces? After single separating <space> or <tab>?)
 $(1), $(2), etc...				Arguments to current macro
