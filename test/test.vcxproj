@@ -152,6 +152,12 @@
       <Project>{c8f6c172-56f2-4e76-b5fa-c3b423b31be7}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Data\Test1.txt" />
+    <Text Include="Data\SubDir\Test2.txt" />
+    <Text Include="Data\SubDir\Test3.txt" />
+    <Text Include="Data\Test4.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

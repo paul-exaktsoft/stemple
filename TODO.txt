@@ -1,12 +1,13 @@
 TODO:
-$(include) path should be relative to current file path
 Report errors with file/source/line/column location
 	Best practice for reporting errors? (not fatal exceptions)
 	Enclosing position reported should be start of directive, not end
 	Whitespace putback needs start position (not important because we won't report errors in whitespace!)
 C-only interface
-Pool of CharStreams for optimized putback
-$(not) and $(or) should be n-ary, not just binary
+Optimize putback
+	Putback to existing putback stream should not push new stream
+	Pool of CharStreams
+$(and) and $(or) should be n-ary, not just binary
 Best practice for versioning executable
 Memory leak detection for unit tests
 Variable substitution:
@@ -90,3 +91,4 @@ Get rid of std::shared_ptr for input and output streams
 Putback has position from original stream for each character
 Get rid of shared_ptr in InStream - InStream => BaseStream, + derived classes to hold ifstream, istringstream (including single-char putback)
 A lighter-weight putback solution for single characters
+$(include) path should be relative to current file path

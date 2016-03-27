@@ -43,11 +43,17 @@ namespace stemple
 
 		Token getToken ();
 
-		InStream &inStream ();
+		inline InStream &inStream ()
+		{
+			return *inStreams.front();
+		}
 
-		InStream *findInStream (const std::string &prefix);
-
+		InStream *findInStream (std::function<bool(const std::shared_ptr<InStream> &ptr)> pred);
+		InStream *findInStreamWithNamePrefix (const std::string &prefix);
 		InStream *findInStreamWithArgs ();
+		InStream *findInStreamWithPath ();
+
+		const std::path getCurrentPath ();
 
 		bool get (char &c, bool expand = true);
 
@@ -88,7 +94,6 @@ namespace stemple
 		std::string argEndChars;	// Set of terminating chars
 		std::string textEndChars;	// Set of terminating chars
 		bool trimArgs;				// Trim whitespace from argument strings by default
-		bool directiveSeen;			// A directive has been processed on the current line
 		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/elseif/else
 
 		// A stack of descriptors for processing nested block ifs/elseifs/elses

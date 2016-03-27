@@ -18,10 +18,17 @@ namespace stemple
 	class InStream
 	{
 	public:
+		bool GraphSeen;				// A printing char has been output on the current line
+		bool DirectiveSeen;			// A directive has been processed on the current line
+		// NOTE: 'directive' implies non-printing commands, such as $(if), etc.,
+		// and does not include macro or argument expansions.
+
 		//----------------------------------------------------------------------
 		InStream (const Position &position, const ArgList &args) :
 			position(position),
-			args(args)
+			args(args),
+			GraphSeen(false),
+			DirectiveSeen(false)
 		{
 		}
 
@@ -34,6 +41,13 @@ namespace stemple
 		const Position &GetPosition ()
 		{
 			return position;
+		}
+
+		//----------------------------------------------------------------------
+		Position GetPutbackPosition ()
+		{
+			Position p(position);
+			return p.Putback();
 		}
 
 		//----------------------------------------------------------------------
@@ -55,6 +69,12 @@ namespace stemple
 		}
 
 		//----------------------------------------------------------------------
+		virtual const std::path *GetPath ()
+		{
+			return nullptr;
+		}
+
+		//----------------------------------------------------------------------
 		virtual bool get (char &c) = 0;
 
 		//----------------------------------------------------------------------
@@ -68,6 +88,12 @@ namespace stemple
 
 		//----------------------------------------------------------------------
 		virtual bool putback (const char &ch) = 0;
+
+		//----------------------------------------------------------------------
+		virtual bool IsCharStream ()
+		{
+			return false;
+		}
 
 	protected:
 		Position		position;
@@ -137,7 +163,8 @@ namespace stemple
 		FileStream (const std::string &pathname, const ArgList &args = {},
 					std::ios_base::openmode mode = std::ios_base::in) :
 			stream(pathname, mode),
-			StreamStream(stream, pathname, args)
+			StreamStream(stream, pathname, args),
+			absolutePath(std::canonical(pathname))
 		{
 		}
 
@@ -146,8 +173,15 @@ namespace stemple
 		{
 		}
 
+		//----------------------------------------------------------------------
+		const std::path *GetPath ()
+		{
+			return &absolutePath;
+		}
+
 	protected:
 		std::ifstream	stream;
+		std::path		absolutePath;
 	};
 
 	//==========================================================================
@@ -253,6 +287,12 @@ namespace stemple
 			} else {
 				return false;
 			}
+		}
+
+		//----------------------------------------------------------------------
+		virtual bool IsCharStream ()
+		{
+			return true;
 		}
 
 	protected:

@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{61c411b7-fb7c-497f-89b2-df7b272a795d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\SubDir">
+      <UniqueIdentifier>{282d1964-1904-4817-8f6a-e521584844d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -32,5 +38,19 @@
     <ClCompile Include="StringTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Data\Test1.txt">
+      <Filter>Data</Filter>
+    </Text>
+    <Text Include="Data\Test4.txt">
+      <Filter>Data</Filter>
+    </Text>
+    <Text Include="Data\SubDir\Test3.txt">
+      <Filter>Data\SubDir</Filter>
+    </Text>
+    <Text Include="Data\SubDir\Test2.txt">
+      <Filter>Data\SubDir</Filter>
+    </Text>
   </ItemGroup>
 </Project>

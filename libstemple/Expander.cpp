@@ -16,7 +16,6 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	Expander::Expander () :
 		trimArgs(true),
-		directiveSeen(false),
 		skipping(0)
 	{
 		SetSpecialChars('$', '(', ')', ',', '$');
@@ -76,19 +75,26 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
+	string Expander::expand (const string &inputString, const string &source)
+	{
+		inStreams.push_front(make_shared<StringStream>(inputString, source));
+		ostringstream output;
+		expand(output);
+		return output.str();
+	}
+
+	//--------------------------------------------------------------------------
 	void Expander::expand (ostream &output)
 	{
 		string leadingWhitespace;
-		bool graphSeen = false;
-		directiveSeen = false;
 		char c;
 		while (get(c)) {
 			if (!skipping) {
 				if (c == '\n') {
-					if (!graphSeen) {
+					if (!inStream().GraphSeen) {
 						// Only output a blank line if we haven't processed any non-
 						// printing directives on it, otherwise skip.
-						if (!directiveSeen) {
+						if (!inStream().DirectiveSeen) {
 							output << leadingWhitespace;
 							DBG("put(): ws='%s'\n", leadingWhitespace.c_str());
 							output.put('\n');
@@ -100,20 +106,22 @@ namespace stemple
 					}
 					// Reset for new line...
 					leadingWhitespace.clear();
-					graphSeen = false;
-					directiveSeen = false;
-				} else if (isspace(c) && !graphSeen) {
+					inStream().GraphSeen = false;
+					inStream().DirectiveSeen = false;
+				} else if (isspace(c) && !inStream().GraphSeen) {
 					// Collect leading whitespace rather than immediately outputting
 					// it. Then we can decide later if we want to skip a blank
 					// line containing just a non-printing directive or not.
 					leadingWhitespace.append(1, c);
 				} else {
-					if (!isspace(c) && !graphSeen) {	// NOTE: using !isspace() instead of isgraph() - better for Unicode?
+					if (!isspace(c) && !inStream().GraphSeen) {	// NOTE: using !isspace() instead of isgraph() - better for Unicode?
 						// Flush collected leading whitespace now that we're
 						// outputting a printing character on this line.
-						graphSeen = true;
+						inStream().GraphSeen = true;
 						if (leadingWhitespace.length()) {
 							output << leadingWhitespace;
+							DBG("put(): ws='%s'\n", leadingWhitespace.c_str());
+							leadingWhitespace.clear();
 						}
 					}
 					output.put(c);
@@ -121,15 +129,6 @@ namespace stemple
 				}
 			}
 		}
-	}
-
-	//--------------------------------------------------------------------------
-	string Expander::expand (const string &inputString, const string &source)
-	{
-		inStreams.push_front(make_shared<StringStream>(inputString, source));
-		ostringstream output;
-		expand(output);
-		return output.str();
 	}
 
 	//--------------------------------------------------------------------------
@@ -151,11 +150,17 @@ namespace stemple
 
 		char x;
 		if (!inStream().get(x)) {
+			c = '\0';
 			DBG("get(): Error from InStream::get()\n");
 			return false;
 		}
 
-		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front()->GetPosition().GetCString());
+		DBG("get(): x=%s gs=%s (%s)\n", printchar(x), inStream().GraphSeen ? "true" : "false", inStream().GetPosition().GetCString());
+
+		// Treat single-character (putback) streams as ephemeral
+		if (inStream().IsCharStream()) {
+			inStreams.pop_front();
+		}
 
 		if (x == escapeChar) {
 			// Handle escape
@@ -167,7 +172,7 @@ namespace stemple
 			} else if (p == '\n') {
 				// Escaped newline causes blank line to be output, even if
 				// it contains only a non-printing directive
-				directiveSeen = false;
+				inStream().DirectiveSeen = false;
 				get(x);	// Get the newline, skipping the escape
 				goto end;
 			}
@@ -212,8 +217,6 @@ end:
 	//--------------------------------------------------------------------------
 	bool Expander::processDirective ()
 	{
-		directiveSeen = true;
-
 		// We've seen opening "$(", now collect first token
 		string name = collectString(nameEndChars);
 
@@ -239,6 +242,7 @@ end:
 			case APPEND:
 			case SIMPLE_APPEND:
 			{
+				inStream().DirectiveSeen = true;
 				bool append = tok == APPEND || tok == SIMPLE_APPEND;
 				bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
 				string text = collectString(textEndChars, simple);
@@ -270,11 +274,12 @@ end:
 		if (!skipping || name == "if" || name == "else" || name == "elseif" || name == "endif") {
 			auto builtinEntry = builtins.find(name);
 			if (builtinEntry != end(builtins)) {
+				inStream().DirectiveSeen = true;
 				// Process builtin directive
 				return builtinEntry->second(args);
 			} else if (is_number(name)) {
-				// Macro is an argument to an enclosing expansion. Look for the
-				// closest 'parent' macro body and get its associated arguments.
+				// An argument to an enclosing expansion. Look for the closest
+				// 'enclosing' macro body and get its associated arguments.
 				InStream *baseStream = findInStreamWithArgs();
 				if (baseStream) {
 					int index = atoi(name.c_str()) - 1;
@@ -368,7 +373,7 @@ end:
 		}
 		// Look for trailing whitespace
 		size_t j = s.length() - 1;
-		if (!escaped) {	// TODO: escape before leading whitespace also preserves trailing whitespace - make it configurable?
+		if (!escaped) {	// TODO: escape before leading whitespace also preserves trailing whitespace - make that configurable?
 			for (; j >= i; -- j) {
 				if (!isspace(s[j])) {
 					break;
@@ -436,38 +441,48 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	InStream &Expander::inStream ()
-	{
-		return *inStreams.front();
-	}
-
-	//--------------------------------------------------------------------------
 	// Returns a pointer rather than a reference because we want the result to
 	// be nullable to denote not found.
 
-	InStream *Expander::findInStream (const string &prefix)
+	InStream *Expander::findInStream (function<bool(const shared_ptr<InStream> &ptr)> pred)
 	{
-		for (auto &is : inStreams) {
-			const string &source = is->GetSource();
-			if (source.compare(0, prefix.length(), prefix) == 0) {
-				return is.get();
+		for (auto &ptr : inStreams) {
+			if (pred(ptr)) {
+				return ptr.get();
 			}
 		}
 		return nullptr;
 	}
 
 	//--------------------------------------------------------------------------
-	// Returns a pointer rather than a reference because we want the result to
-	// be nullable to denote not found.
+	InStream *Expander::findInStreamWithNamePrefix (const string &prefix)
+	{
+		return findInStream([prefix](const shared_ptr<InStream> &ptr) {
+			return ptr->GetSource().compare(0, prefix.length(), prefix) == 0;
+		});
+	}
 
+	//--------------------------------------------------------------------------
 	InStream *Expander::findInStreamWithArgs ()
 	{
-		for (auto &is : inStreams) {
-			if (is->GetArgCount()) {
-				return is.get();
-			}
-		}
-		return nullptr;
+		return findInStream([](const shared_ptr<InStream> &ptr) {
+			return ptr->GetArgCount() > 0;
+		});
+	}
+
+	//--------------------------------------------------------------------------
+	InStream *Expander::findInStreamWithPath ()
+	{
+		return findInStream([](const shared_ptr<InStream> &ptr) {
+			return ptr->GetPath() != nullptr;
+		});
+	}
+
+	//--------------------------------------------------------------------------
+	const path Expander::getCurrentPath ()
+	{
+		InStream *is = findInStreamWithPath();
+		return is ? path(*is->GetPath()).remove_filename() : current_path();
 	}
 
 	//--------------------------------------------------------------------------
@@ -479,12 +494,13 @@ end:
 	//--------------------------------------------------------------------------
 	bool Expander::putback (const char &c)
 	{
-		// Putback, for std::ifstream in particular, seems to be problematic (in
-		// my Mac OS X port, it seems to always fail). So maintain a separate
-		// putback area. The simplest way to do this is to push a new InStream.
+		// Putback for file streams seems to be problematic (in my Mac OS X
+		// build, it always fails). So we no longer use std::istream's putback
+		// facility and use separate putback storage. The simplest way to do it
+		// is to push a new InStream holding a single character.
 		// TODO: Optimize single-character putback to use a lighter-weight mechanism?
 		DBG("putback()\n");
-		inStreams.push_front(make_shared<CharStream>(c, Position(inStream().GetPosition()).Putback()));
+		inStreams.push_front(make_shared<CharStream>(c, inStream().GetPutbackPosition()));
 		return good();
 	}
 
@@ -619,7 +635,8 @@ end:
 	{
 		if (args.size() && args[0].size()) {
 			const vector<string> restArgs(args.begin() + 1, args.end());
-			inStreams.push_front(make_shared<FileStream>(args[0], restArgs));
+			path p = canonical(args[0], getCurrentPath());
+			inStreams.push_front(make_shared<FileStream>(p.string(), restArgs));
 			return inStream().good();
 		} else {
 			// TODO: Report error

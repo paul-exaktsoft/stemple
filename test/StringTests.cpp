@@ -2,6 +2,8 @@
 
 using namespace std;
 
+extern string dataPath;
+
 class StringTests: public ::testing::Test
 {
 protected:
@@ -11,9 +13,13 @@ protected:
 
 	void TearDown()
 	{
+		if (!tempPathname.empty()) {
+			unlink(tempPathname.c_str());
+		}
 	}
 
 	stemple::Expander expander;
+	string tempPathname;
 };
 
 TEST_F(StringTests, PassTextUnaltered)
@@ -129,7 +135,7 @@ TEST_F(StringTests, InlineIfThenElse)
 TEST_F(StringTests, InlineIfOnly)
 {
 	string expansion = expander.Expand("$(IF=$(if $(A),$(A)=>True))\n$(IF)\n$(A=aaa)\n$(IF)\n$(A=0)\n$(IF)\n");
-	ASSERT_EQ("aaa=>True\n", expansion);
+	ASSERT_EQ("\naaa=>True\n\n", expansion);
 }
 
 TEST_F(StringTests, SimpleBlockIfTrue)
@@ -290,15 +296,21 @@ TEST_F(StringTests, PathEnvVar)
 
 TEST_F(StringTests, Include)
 {
-	string name = tmpnam(nullptr);
-	ofstream ofs(name);
+	tempPathname = tmpnam(nullptr);
+	ofstream ofs(tempPathname);
 	ofs << "$(A)$(1)" << endl;
 	ofs.close();
 	expander.SetMacro("A", "aaa");
-	string expansion = expander.Expand("$(include " + name + ", bbb)");
+	string expansion = expander.Expand("$(include " + tempPathname + ", bbb)");
 	ASSERT_EQ("aaabbb\n", expansion);
-	expansion = expander.Expand("$(include " + name + ")");
+	expansion = expander.Expand("$(include " + tempPathname + ")");
 	ASSERT_EQ("aaa\n", expansion);
+}
+
+TEST_F(StringTests, NestedIncludes)
+{
+	string expansion = expander.Expand("$(include " + dataPath + "/test1.txt)");
+	ASSERT_EQ("This is test4.txt\n", expansion);
 }
 
 TEST_F(StringTests, Equal)
