@@ -1,5 +1,5 @@
 // Expander
-// ?
+// Processes input streams looking for embedded directives and macro expansions.
 //
 // Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
@@ -40,13 +40,29 @@ inline char *printchar (const char &c)
 }
 
 //------------------------------------------------------------------------------
-inline bool compare (const string &a, const string &b)
+inline bool compare (const string &a, const string &b, bool ignoreCase = false)
 {
 	if (a.size() != b.size()) {
 		return false;
 	}
-	// TODO: case insensitive string compare
-	return a.compare(b) == 0;
+	if (ignoreCase) {
+		for (auto ia = begin(a), ib = begin(b); ia != end(a); ++ ia, ++ ib) {
+			if (tolower(*ia) != tolower(*ib)) return false;
+		}
+		return true;
+	} else {
+		return a.compare(b) == 0;
+	}
+}
+
+//--------------------------------------------------------------------------
+inline bool textToBool (const std::string &text)
+{
+	// TODO: trim text before comparison?
+	return 	!(text == "" ||
+			  text == "0" ||
+			  compare(text, "false", true) ||
+			  compare(text, "no", true));
 }
 
 //------------------------------------------------------------------------------
@@ -72,6 +88,8 @@ private:
 	T initial_value;
 };
 
+//==============================================================================
+//==============================================================================
 namespace stemple
 {
 
@@ -83,12 +101,19 @@ namespace stemple
 	{
 		SetSpecialChars('$', '(', ')', ',', '$');
 		builtins = {
-			{ "if",			bind(&Expander::do_if,		this, _1) },
-			{ "else",		bind(&Expander::do_else,	this, _1) },
-			{ "elseif",		bind(&Expander::do_elseif,	this, _1) },
-			{ "endif",		bind(&Expander::do_endif,	this, _1) },
-			{ "env",		bind(&Expander::do_env,		this, _1) },
-			{ "include",	bind(&Expander::do_include,	this, _1) },
+			{ "if",			bind(&Expander::do_if,			this, _1) },
+			{ "else",		bind(&Expander::do_else,		this, _1) },
+			{ "elseif",		bind(&Expander::do_elseif,		this, _1) },
+			{ "endif",		bind(&Expander::do_endif,		this, _1) },
+			{ "env",		bind(&Expander::do_env,			this, _1) },
+			{ "include",	bind(&Expander::do_include,		this, _1) },
+			{ "equal",		bind(&Expander::do_equal,		this, _1) },
+			{ "notequal",	bind(&Expander::do_notequal,	this, _1) },
+			{ "match",		bind(&Expander::do_match,		this, _1) },
+			{ "and",		bind(&Expander::do_and,			this, _1) },
+			{ "or",			bind(&Expander::do_or,			this, _1) },
+			{ "not",		bind(&Expander::do_not,			this, _1) },
+			{ "defined",	bind(&Expander::do_defined,		this, _1) },
 		};
 	}
 
@@ -342,9 +367,9 @@ end:
 
 	//--------------------------------------------------------------------------
 	// The only time this is called with expand==false is when collecting the
-	// contents of a regular recursive variable assignment. In this case, nested
+	// contents of a normal recursive variable assignment. In this case, nested
 	// directives need to be tracked since they are also terminated by the same
-	// end delimiter we are looking for.
+	// end-delimiter we are looking for.
 
 	string Expander::collectString (const string &delims, bool expand)
 	{
@@ -367,7 +392,7 @@ end:
 			}
 			if (!expand && !escaped) {
 				// Keep track of nested directives when not expanding
-				// TODO: This is not really tracking directives, just ( and )
+				// TODO: This doesn't really match full directives, just '(' and ')'
 				if (c == openChar) {
 					++ nested;
 				} else if (c == closeChar) {
@@ -547,13 +572,9 @@ end:
 	{
 		bool testResult = false;
 		if (args.size() > 0) {
-			// TODO[PCA]: Trim args[0]
-			testResult = !(args[0] == "" ||
-						   args[0] == "0" ||
-						   compare(args[0], "false") ||
-						   compare(args[0], "no"));
+			testResult = textToBool(args[0]);
 		}
-		if (args.size() > 1) {
+		if (args.size() == 2 || args.size() == 3) {
 			// Inline form
 			if (!skipping) {
 				if (testResult) {
@@ -562,15 +583,19 @@ end:
 					inStreams.push_front(make_shared<InStream>(args[2], "False branch"));
 				}
 			}
+			return true;
 		} else {
+			if (args.size() != 1) {
+				// TODO: Report error
+			}
 			if (testResult) {
 				ifContext.push({ IfContext::Phase::ElseOrEnd, true, false });
 			} else {
 				ifContext.push({ IfContext::Phase::ElseOrEnd, false, true });
 				++ skipping;
 			}
+			return true;
 		}
-		return true;
 	}
 
 	//--------------------------------------------------------------------------
@@ -589,8 +614,10 @@ end:
 			}
 			ifContext.top().phase = IfContext::Phase::EndOnly;
 			return true;
+		} else {
+			// TODO: Report error
+			return false;
 		}
-		return false;
 	}
 
 	//--------------------------------------------------------------------------
@@ -599,12 +626,10 @@ end:
 		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
 			if (!ifContext.top().branchTaken) {
 				bool testResult = false;
-				if (args.size() > 0) {
-					// TODO[PCA]: Trim args[0]
-					testResult = !(args[0] == "" ||
-								   args[0] == "0" ||
-								   compare(args[0], "false") ||
-								   compare(args[0], "no"));
+				if (args.size() == 1) {
+					testResult = textToBool(args[0]);
+				} else {
+					// TODO: Report error
 				}
 				if (testResult) {
 					if (ifContext.top().isSkipping) {
@@ -625,8 +650,10 @@ end:
 				}
 			}
 			return true;
+		} else {
+			// TODO: Report error
+			return false;
 		}
-		return false;
 	}
 
 	//--------------------------------------------------------------------------
@@ -638,8 +665,10 @@ end:
 			}
 			ifContext.pop();
 			return true;
+		} else {
+			// TODO: Report error
+			return false;
 		}
-		return false;
 	}
 
 	//--------------------------------------------------------------------------
@@ -651,8 +680,10 @@ end:
 				inStreams.push_front(make_shared<InStream>(env, args[0] + " environment variable"));
 			}
 			return true;
+		} else {
+			// TODO: Report error
+			return false;
 		}
-		return false;
 	}
 
 	//--------------------------------------------------------------------------
@@ -662,7 +693,123 @@ end:
 			const vector<string> restArgs(args.begin() + 1, args.end());
 			inStreams.push_front(make_shared<InStream>(args[0], restArgs));
 			return inStream().GetStream().good();
+		} else {
+			// TODO: Report error
+			return false;
 		}
-		return false;
+	}
+
+	//--------------------------------------------------------------------------
+	// TODO: support :i input modifier
+
+	bool Expander::do_equal (const vector<string> &args)
+	{
+		if (args.size() > 1) {
+			inStreams.push_front(make_shared<InStream>(compare(args[0], args[1]) ? "1" : "0", "Equal result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "Equal error"));
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	// TODO: support :i input modifier
+
+	bool Expander::do_notequal (const vector<string> &args)
+	{
+		if (args.size() > 1) {
+			inStreams.push_front(make_shared<InStream>(!compare(args[0], args[1]) ? "1" : "0", "Notequal result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "Notequal error"));
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	// Uses modified ECMAScript: http://en.cppreference.com/w/cpp/regex/ecmascript
+	// TODO: support :i input modifier
+
+	bool Expander::do_match (const vector<string> &args)
+	{
+		if (args.size() > 1) {
+			regex pattern(args[1] /*, regex_constants::icase*/);
+			bool match = regex_search(args[0], pattern);
+			inStreams.push_front(make_shared<InStream>(match ? "1" : "0", "Match result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "Match error"));
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_and (const vector<string> &args)
+	{
+		if (args.size() > 1) {
+			inStreams.push_front(make_shared<InStream>(textToBool(args[0]) && textToBool(args[1]) ? "1" : "0", "And result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "And error"));
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_or (const vector<string> &args)
+	{
+		if (args.size() > 1) {
+			inStreams.push_front(make_shared<InStream>(textToBool(args[0]) || textToBool(args[1]) ? "1" : "0", "Or result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "Or error"));
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_not (const vector<string> &args)
+	{
+		if (args.size() == 1) {
+			inStreams.push_front(make_shared<InStream>(!textToBool(args[0]) ? "1" : "0", "Not result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "Not error"));
+			return false;
+		}
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_defined (const vector<string> &args)
+	{
+		if (args.size() == 1) {
+			bool defined = false;
+			if (is_number(args[0])) {
+				// Macro is an argument to a previous expansion. Look for the
+				// closest 'parent' macro body and get its associated arguments.
+				InStream *baseStream = findInStreamWithArgs();
+				if (baseStream) {
+					int index = atoi(args[0].c_str()) - 1;
+					defined = index >= 0 && index < baseStream->GetArgCount();
+				}
+			} else {
+				// Lookup macro
+				auto macroEntry = macros.find(args[0]);
+				defined = macroEntry != end(macros);
+			}
+			inStreams.push_front(make_shared<InStream>(defined ? "1" : "0", "Defined result"));
+			return true;
+		} else {
+			// TODO: Report error
+			inStreams.push_front(make_shared<InStream>("0", "Defined error"));
+			return false;
+		}
 	}
 }

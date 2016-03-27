@@ -18,6 +18,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <regex>
 #include <sstream>
 #include <stack>
 #include <stdio.h>

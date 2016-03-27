@@ -1,5 +1,5 @@
 // Expander
-// ?
+// Processes input streams using embedded directives and macro expansions.
 //
 // Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
@@ -76,6 +76,13 @@ namespace stemple
 		bool Expander::do_endif (const std::vector<std::string> &args);
 		bool Expander::do_env (const std::vector<std::string> &args);
 		bool Expander::do_include (const std::vector<std::string> &args);
+		bool Expander::do_equal (const std::vector<std::string> &args);
+		bool Expander::do_notequal (const std::vector<std::string> &args);
+		bool Expander::do_match (const std::vector<std::string> &args);
+		bool Expander::do_and (const std::vector<std::string> &args);
+		bool Expander::do_or (const std::vector<std::string> &args);
+		bool Expander::do_not (const std::vector<std::string> &args);
+		bool Expander::do_defined (const std::vector<std::string> &args);
 
 		std::list<std::shared_ptr<InStream>> inStreams;
 		std::map<std::string, Macro> macros;

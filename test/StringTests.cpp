@@ -269,9 +269,9 @@ TEST_F(StringTests, MacroWithArgumentsEscapingDelimtersInsideAssignment)
 
 TEST_F(StringTests, MacroWithTrimmedArguments)
 {
-	expander.SetMacro("args", "'$(1)'; '$(2)'; '$(3)'");
-	string expansion = expander.Expand("Args: $(args\tone,  two ,\nthree\t ).");
-	ASSERT_EQ("Args: 'one'; 'two'; 'three'.", expansion);
+	expander.SetMacro("args", "'$(1)'; '$(2)'; '$(3)'; '$(4)'");
+	string expansion = expander.Expand("Args: $(args\tone,  two ,\nthree\t ,four \t).");
+	ASSERT_EQ("Args: 'one'; 'two'; 'three'; 'four'.", expansion);
 }
 
 TEST_F(StringTests, MacroWithNonTrimmedArguments)
@@ -299,4 +299,70 @@ TEST_F(StringTests, Include)
 	ASSERT_EQ("aaabbb\n", expansion);
 	expansion = expander.Expand("$(include " + name + ")");
 	ASSERT_EQ("aaa\n", expansion);
+}
+
+TEST_F(StringTests, Equal)
+{
+	expander.SetMacro("A", "aaa");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccc");
+	string expansion = expander.Expand("$(if $(equal $(A), aaax), True, False), $(if $(equal $(B), ccc), True, False)");
+	ASSERT_EQ("False, True", expansion);
+}
+
+TEST_F(StringTests, NotEqual)
+{
+	expander.SetMacro("A", "aaa");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccc");
+	string expansion = expander.Expand("$(if $(notequal $(A), aaax), True, False), $(if $(notequal $(B), ccc), True, False)");
+	ASSERT_EQ("True, False", expansion);
+}
+
+TEST_F(StringTests, Match)
+{
+	expander.SetMacro("A", "aaa");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccc");
+	string expansion = expander.Expand("$(if $(match $(A), a*.x), True, False), $(if $(match $(B), c+.[a-z]), True, False)");
+	ASSERT_EQ("False, True", expansion);
+}
+
+TEST_F(StringTests, And)
+{
+	string expansion = expander.Expand("$(if $(and yes, yes), True, False), "
+									   "$(if $(and yes, no), True, False), "
+									   "$(if $(and no, yes), True, False), "
+									   "$(if $(and no, no), True, False)");
+	ASSERT_EQ("True, False, False, False", expansion);
+}
+
+TEST_F(StringTests, Or)
+{
+	string expansion = expander.Expand("$(if $(or yes, yes), True, False), "
+									   "$(if $(or yes, no), True, False), "
+									   "$(if $(or no, yes), True, False), "
+									   "$(if $(or no, no), True, False)");
+	ASSERT_EQ("True, True, True, False", expansion);
+}
+
+TEST_F(StringTests, Not)
+{
+	string expansion = expander.Expand("$(if $(not yes), True, False), "
+									   "$(if $(not no), True, False)");
+	ASSERT_EQ("False, True", expansion);
+}
+
+TEST_F(StringTests, Defined)
+{
+	expander.SetMacro("A", "aaa");
+	string expansion = expander.Expand("$(if $(defined A), True, False), $(if $(defined B), True, False)");
+	ASSERT_EQ("True, False", expansion);
+}
+
+TEST_F(StringTests, ArgDefined)
+{
+	expander.SetMacro("A", "$(if $(defined 1), True, False), $(if $(defined 2), True, False)");
+	string expansion = expander.Expand("$(A aaa)");
+	ASSERT_EQ("True, False", expansion);
 }

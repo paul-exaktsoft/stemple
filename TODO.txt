@@ -1,23 +1,23 @@
 TODO:
-$(eq <text>, <pattern>)					"true" else "false" - <pattern> can be RE
-$(ne <text>, <pattern>)	
 Variable substitution:
 $(<name>:<mods>)						<mods> modify expansion, like csh
 	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?
-	:n do not trim whitespace from arguments before expansion
+	:n [input] do not trim whitespace from arguments before expansion
 	:l/:u change case or $(lower $(<name>))
 	:c capitalize or $(capitalize $(<name>))
+	:i [input] ignore case (for $(equals), etc.)
 	:h returns the directory of a path (aka "head")
 	:t returns the filename of a path (aka "tail")
 	:r returns the directory and filename without the last extension (aka "root")
 	:e returns the extension of the path (aka "end")
-	Allow mods to be chained, eg :h:h:e
-	/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
+	:s/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
 	:offset[:length] substring or $(substr $(<name>),offset[,length])
+Allow mods to be chained, eg :h:h:e
+$(not) and $(or) should be n-ary, not just binary
 $(exec <shell_command>)
-$(defined <name>)						"true" else "false"
 $((<expr>))								Substitute result of evaluated arithmetic expression
 $(if <expr>)							<expr> is arithmetic or logical expression (or use $(if $((x > 0))) maybe?)
+$(length <name>)						Length of macro body? Or of text argument? Need arithmetic expression 1st
 $(*[:<offset>[:<length>]])				All arguments (or a subset) [What separator? ' ' or ','? Or user-defined?]
 $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
@@ -69,3 +69,10 @@ Define (customizable) distinct escape character, so allow:
 Trim arguments by default - use ,$<whitespace><text> escape after argsep (need modifier to preserve whitespace for all args. Eg, :n)
 $(env <var>)
 $(include <pathname>[, <text>]*)
+$(equal <text>, <pattern>)					"true" else "false"
+$(notequal <text>, <pattern>)
+$(match <text>, <regex>)
+$(and <text>, <text>)
+$(or <text>, <text>)
+$(not <text>, <text>)
+$(defined <name>)						"true" else "false"

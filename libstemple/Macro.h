@@ -1,5 +1,5 @@
 // Macro
-// ?
+// Represents a named macro and its replacement text.
 //
 // Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
