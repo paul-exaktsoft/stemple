@@ -1,8 +1,5 @@
 TODO:
 Variable substitution:
-[<whitespace>]$(...)<nl>				Line is ignored (allows $() on a line by itself without adding a blank line to the output)
-[<whitespace>]$(...)$<nl>				Newline is output - line is not ignored
-$(<name>=<text>)						<text> can containing leading whitespace. Embedded $()s are expanded recursively when body is expanded
 $(<name>:=<text>)						Embedded $() are expanded once at definition time (like Make's 'simply expanded' flavor of variable)
 $(<name>+=<text>)						Append
 $(<name>:+=<text>)						Append - 'simply expanded'
@@ -28,11 +25,13 @@ $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
 $(// <any_freeform_comment_text>)		Or $(rem ...)?
 
-Google Test/Mock unit tests
+Best practice for reporting errors? (not fatal exceptions)
+Report errors with file/source/line/column location
+Memory leak detection for unit tests
+Asserts
 CMakeLists.txt
-Test in Xcode and Linux Makefile
+Test building with Xcode and Linux Makefile
 Define IFS for array separator
-Add unit tests using Google Test/Mock
 Error handling
 Verbosity
 Implement stemple command:
@@ -44,8 +43,13 @@ Implement stemple command:
 	<pathname>...			Files to expand
 
 DONE:
-$(<name>)						<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
-$$(...							Literal (escaped) "$("
-$(<name> <text>[, <text>]...)	<text> can contain $() expansions too, text can contain spaces. (Leading spaces? After single separating <space> or <tab>?)
-$(1), $(2), etc...				Arguments to current macro
-
+$(<name>)								<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
+$$(...									Literal (escaped) "$("
+$(<name> <text>[, <text>]...)			<text> can contain $() expansions too, text can contain spaces. (Leading spaces? After single separating <space> or <tab>?)
+$(1), $(2), etc...						Arguments to current macro
+Google Test/Mock unit tests
+[<wspace>]$(...)[<wspace>]<nl>			Line is ignored (allows $() on a line by itself without adding a blank line to the output)
+$(<name>=<text>)						<text> can containing leading whitespace. Embedded $()s are expanded recursively when body is expanded
+Use variables for special chars
+[<wspace>]$(...)[<wspace>]$<nl>			Line is not ignored
+Make special characters configurable

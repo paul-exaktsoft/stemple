@@ -24,12 +24,14 @@ namespace stemple
 
 		void AddMacro (const std::string &name, const std::string &body, bool simple = false);
 
+		void SetSpecialChars (char intro, char open, char close, char argSep);
+
 	protected:
 		std::string expand (const std::string &input, const std::string &source);
 
 		bool processDirective ();
 
-		std::string collectString (const std::string &delims);
+		std::string collectString (const std::string &delims, bool expand = true);
 
 		std::vector<std::string> collectArgs ();
 
@@ -64,9 +66,16 @@ namespace stemple
 
 		bool putback (const char &ch);
 
-//		std::stack<InStream> streams;
 		std::list<InStream> inStreams;
 		std::map<std::string, Macro> macros;
+		char introChar;				// The start of a directive. Default: '$'
+		char openChar;				// The start of the directive body. Default: '('
+		char closeChar;				// The end of the directive. Default: ')'
+		char argSepChar;			// Separator between arguments. Default: ','
+		std::string nameEndChars;	// Set of terminating chars
+		std::string argEndChars;	// Set of terminating chars
+		std::string textEndChars;	// Set of terminating chars
+		bool directiveSeen;			// A directive has been processed on the current line
 	};
 }
 
