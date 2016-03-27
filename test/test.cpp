@@ -7,7 +7,7 @@
 int main (int argc, char **argv)
 {
 #if 0
-	argv[1] = (char *)"--gtest_filter=StringTests.SkipDirectiveOnlyLines";
+	argv[1] = (char *)"--gtest_filter=StringTests.SimplyExpandedAppend";
 	argc = 2;
 #endif
 	::testing::InitGoogleTest(&argc, argv);

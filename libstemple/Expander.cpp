@@ -95,10 +95,13 @@ namespace stemple
 					// line, otherwise output it.
 					if (!directiveSeen) {
 						output << leadingWhitespace;
+						DEBUG("put(): ws='%s'\n", leadingWhitespace);
 						output.put('\n');
+						DEBUG("put(): c=%s\n", printchar(c));
 					}
 				} else {
 					output.put('\n');
+					DEBUG("put(): c=%s\n", printchar(c));
 				}
 				// Reset for new line...
 				leadingWhitespace.clear();
@@ -119,6 +122,7 @@ namespace stemple
 					}
 				}
 				output.put(c);
+				DEBUG("put(): c=%s\n", printchar(c));
 			}
 		}
 	}
@@ -136,6 +140,7 @@ namespace stemple
 	bool Expander::get (char &c, bool expand)
 	{
 		if (!inStreams.size()) {
+			c = '\0';
 			DEBUG("get(): EOF\n");
 			return false;
 		}
@@ -162,7 +167,10 @@ namespace stemple
 					if (get(x)) {	// Eat opening '('
 						if (processDirective()) {
 						}
-						get(x);	// Get first character of expansion, or character following ')'
+						// Get first character of expansion, or character following ')'
+						if (!get(x)) {
+							return false;
+						}
 					}
 				} else if (peek() == introChar) {
 					// Escaped '$' cannot start a macro
@@ -211,21 +219,26 @@ namespace stemple
 			}
 		break;
 		case ASSIGN:
-			{
-				string text = collectString(textEndChars, false);
-				tok = getToken();	// Get closing ')'
-				AddMacro(name, text);
-				return true;
-			}
-			break;
 		case SIMPLE_ASSIGN:
 		case APPEND:
 		case SIMPLE_APPEND:
 			{
 				bool append = tok == APPEND || tok == SIMPLE_APPEND;
 				bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
+				string text = collectString(textEndChars, simple);
+				tok = getToken();	// Get closing ')'
+				if (append) {
+					auto macro = macros.find(name);
+					if (macro != end(macros)) {
+						macro->second.GetBody() += text;
+					} else {
+						AddMacro(name, text);
+					}
+				} else {
+					AddMacro(name, text);
+				}
+				return true;
 			}
-			break;
 		case MOD:
 			break;
 		case CLOSE:
@@ -250,7 +263,10 @@ namespace stemple
 		} else {
 			auto macro = macros.find(name);
 			if (macro != end(macros)) {
-				inStreams.push_front(InStream(macro->second.GetBody(), string("Body of ") + name, args));
+				string text = macro->second.GetBody();
+				if (text.length()) {
+					inStreams.push_front(InStream(macro->second.GetBody(), string("Body of ") + name, args));
+				}
 				return true;
 			}
 		}
@@ -258,16 +274,30 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
+	// The only time this is called with expand==false is when collecting the
+	// contents of a regular recursive variable assignment. In this case, nested
+	// directives need to be tracked since they are also terminated by the same
+	// end delimiter we are looking for.
+
 	string Expander::collectString (const string &delims, bool expand)
 	{
+		int nested = 0;
 		ostringstream output;
 		char c;
 		while (get(c, expand)) {
-			if (delims.find(c) != string::npos) {
+			if (!nested && delims.find(c) != string::npos) {
 				putback(c);
 				break;
+			} else {
+				if (!expand) {
+					if (c == openChar) {
+						++ nested;
+					} else if (c == closeChar) {
+						-- nested;
+					}
+				}
+				output.put(c);
 			}
-			output.put(c);
 		}
 		return output.str();
 	}

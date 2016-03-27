@@ -84,3 +84,27 @@ TEST_F(StringTests, SetSpecialChars)
 	string expansion = expander.Expand("%{A=aaa}\n%%{A}: %{A}\nList: %{list one;two;three}.\nOld-style: $(list one,two,three).");
 	ASSERT_EQ("%{A}: aaa\nList: [one, two, $(3)].\nOld-style: $(list one,two,three).", expansion);
 }
+
+TEST_F(StringTests, SimplyExpandedMacros)
+{
+	string expansion = expander.Expand("$(A:=$(B))$(B=b)$(A2:=$(B))$(B=x)$(A)$(A2)");
+	ASSERT_EQ("b", expansion);
+}
+
+TEST_F(StringTests, RecursiveMacros)
+{
+	string expansion = expander.Expand("$(A=$(B))$(B=b)$(A2=$(B))$(B=x)$(A)$(A2)");
+	ASSERT_EQ("xx", expansion);
+}
+
+TEST_F(StringTests, SimplyExpandedAppend)
+{
+	string expansion = expander.Expand("$(A=aaa)$(B=bbb)$(C:=$(A))$(C:+=$(B))$(B=x)$(C)");
+	ASSERT_EQ("aaabbb", expansion);
+}
+
+TEST_F(StringTests, RecursiveAppend)
+{
+	string expansion = expander.Expand("$(A=aaa)$(B=bbb)$(C=$(A))$(C+=$(B))$(B=x)$(C)");
+	ASSERT_EQ("aaax", expansion);
+}

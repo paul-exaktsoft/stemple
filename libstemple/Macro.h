@@ -36,7 +36,7 @@ namespace stemple
 		}
 
 		//----------------------------------------------------------------------
-		std::string GetBody ()
+		std::string &GetBody ()
 		{
 			return body;
 		}
