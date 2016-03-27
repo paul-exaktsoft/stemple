@@ -1,5 +1,7 @@
 TODO:
 Get rid of std::shared_ptr for input and output streams
+Maintain a separate putback store with position from original stream
+Cull eof streams just before read - so top stream (and position) stays active all the time c is in play
 Variable substitution:
 $(<name>:<mods>)						<mods> modify expansion, like csh
 	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?

@@ -1,7 +1,7 @@
 // Expander
 // Processes input streams looking for embedded directives and macro expansions.
 //
-// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
 
 #include "stdafx.h"
 
@@ -10,7 +10,7 @@ using namespace std::placeholders;
 
 //------------------------------------------------------------------------------
 template<typename... Args>
-inline void DEBUG (const std::string &fmt, Args... args)
+inline void DBG (const std::string &fmt, Args... args)
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wformat-security"	// Suppress "warning: format string is not a string literal (potentially insecure)"
@@ -19,7 +19,11 @@ inline void DEBUG (const std::string &fmt, Args... args)
 	snprintf(buf.get(), size, fmt.c_str(), args...);
 #pragma clang diagnostic pop
 
+#if defined _WIN32
 	OutputDebugStringA(buf.get());
+#else
+//	printf("%s", buf.get());
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -170,13 +174,13 @@ namespace stemple
 						// printing directives on it, otherwise skip.
 						if (!directiveSeen) {
 							output << leadingWhitespace;
-							DEBUG("put(): ws='%s'\n", leadingWhitespace);
+							DBG("put(): ws='%s'\n", leadingWhitespace.c_str());
 							output.put('\n');
-							DEBUG("put(): c=%s\n", printchar(c));
+							DBG("put(): c=%s\n", printchar(c));
 						}
 					} else {
 						output.put('\n');
-						DEBUG("put(): c=%s\n", printchar(c));
+						DBG("put(): c=%s\n", printchar(c));
 					}
 					// Reset for new line...
 					leadingWhitespace.clear();
@@ -197,7 +201,7 @@ namespace stemple
 						}
 					}
 					output.put(c);
-					DEBUG("put(): c=%s\n", printchar(c));
+					DBG("put(): c=%s\n", printchar(c));
 				}
 			}
 		}
@@ -217,14 +221,17 @@ namespace stemple
 	{
 		if (!inStreams.size()) {
 			c = '\0';
-			DEBUG("get(): EOF\n");
+			DBG("get(): EOF\n");
 			return false;
 		}
 
 		char x;
-		if (!inStream().get(x)) return false;
+		if (!inStream().get(x)) {
+			DBG("get(): Error from InStream::get()\n");
+			return false;
+		}
 
-		DEBUG("get(): x=%s (%s)\n", printchar(x), inStreams.front()->GetSource().c_str());
+		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front()->GetSource().c_str());
 
 		// If we've reached the end of the current stream, detect it now. We
 		// won't wait for the next istream::get() to return eof, since we want
@@ -569,8 +576,12 @@ end:
 			// push a new stream
 			inStreams.push_front(make_shared<InStream>(string(1, c), "Putback"));
 		} else {
-			// Putback on the current stream
-			inStream().putback(c);
+//			// Putback on the current stream
+//			inStream().putback(c);
+//			if (!inStream().good()) {
+//				DBG("putback() c=%s failed for %s\n", printchar(c), inStream().GetSource().c_str());
+//			}
+			inStreams.push_front(make_shared<InStream>(string(1, c), "Putback"));
 		}
 		return good();
 	}
