@@ -35,6 +35,8 @@ namespace stemple
 
 		std::vector<std::string> collectArgs (bool trim);
 
+		std::string trimWhitespace (const std::string &s);
+
 		enum Token { ARGS, ASSIGN, APPEND, MOD, SIMPLE_ASSIGN, SIMPLE_APPEND, CLOSE, END, ERR };
 
 		Token getToken ();

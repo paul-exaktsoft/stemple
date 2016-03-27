@@ -266,3 +266,18 @@ TEST_F(StringTests, MacroWithArgumentsEscapingDelimtersInsideAssignment)
 	string expansion = expander.Expand("$(M=Args: $(args one$,two,three$$$)).)$(M)");
 	ASSERT_EQ("Args: 'one,two'; 'three)'.", expansion);
 }
+
+TEST_F(StringTests, MacroWithTrimmedArguments)
+{
+	expander.SetMacro("args", "'$(1)'; '$(2)'; '$(3)'");
+	string expansion = expander.Expand("Args: $(args\tone,  two ,\nthree\t ).");
+	ASSERT_EQ("Args: 'one'; 'two'; 'three'.", expansion);
+}
+
+TEST_F(StringTests, MacroWithNonTrimmedArguments)
+{
+	expander.SetMacro("args", "'$(1)'; '$(2)'; '$(3)'");
+	// NOTE: Doubling the escape stops get() from seeing $\n and eating the escape before collectArgs() can see it
+	string expansion = expander.Expand("Args: $(args\tone,   $ two ,$$\nthree\t ).");
+	ASSERT_EQ("Args: 'one'; ' two '; '\nthree\t '.", expansion);
+}

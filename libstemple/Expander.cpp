@@ -153,7 +153,7 @@ namespace stemple
 					// line containing just a non-printing directive or not.
 					leadingWhitespace.append(1, c);
 				} else {
-					if (!isspace(c) && !graphSeen) {
+					if (!isspace(c) && !graphSeen) {	// NOTE: using !isspace() instead of isgraph() - better for Unicode?
 						// Flush collected leading whitespace now that we're
 						// outputting a printing character on this line.
 						graphSeen = true;
@@ -384,11 +384,45 @@ end:
 		char c;
 		do {
 			string arg = collectString(argEndChars);
-			args.push_back(arg);
+			args.push_back(trim ? trimWhitespace(arg) : arg);
 			get(c);
 		} while (c == argSepChar);
 		putback(c);
 		return args;
+	}
+
+	//--------------------------------------------------------------------------
+	string Expander::trimWhitespace (const string &s)
+	{
+		if (!s.length()) return s;
+
+		// Look for initial whitespace. If <escape><whitespace> found, stop
+		bool escaped = false;
+		size_t i;
+		for (i = 0; i < s.length(); ++ i) {
+			if (!isspace(s[i])) {
+				if (s[i] == escapeChar && i + 1 < s.length() && isspace(s[i + 1])) {
+					++ i;	// Omit escape, leaving subsequent leading whitespace
+					escaped = true;
+				}
+				break;
+			}
+		}
+		// Look for trailing whitespace
+		size_t j = s.length() - 1;
+		if (!escaped) {	// TODO: escape before leading whitespace also preserves trailing whitespace - make it configurable?
+			for ( ; j >= i; -- j) {
+				if (!isspace(s[j])) {
+					break;
+				}
+			}
+		}
+		size_t count = i > j ? 0 : j - i + 1;
+		if (j == i && escaped) {
+			// String will consist only of escaped whitespace
+			count = s.length() - i;
+		}
+		return s.substr(i, count);
 	}
 
 	//--------------------------------------------------------------------------
@@ -397,7 +431,7 @@ end:
 		string whitespace;
 		char c;
 		while (get(c)) {
-			if (c == ' ' || c == '\t') {
+			if (isspace(c)) {
 				whitespace += c;
 			} else if (c == ':') {
 				if (get(c)) {

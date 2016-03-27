@@ -1,7 +1,8 @@
 TODO:
 Variable substitution:
 $(<name>:<mods>)						<mods> modify expansion, like csh or bash
-	:w trim whitespace (:f/:b trim front/back) or $(trim $(<name>))?
+	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?
+	:n do not trim whitespace from arguments before expansion
 	:l/:u change case or $(lower $(<name>))
 	:c capitalize or $(capitalize $(<name>))
 	:h returns the directory of a path (aka "head")
@@ -9,8 +10,8 @@ $(<name>:<mods>)						<mods> modify expansion, like csh or bash
 	:r returns the directory and filename without the last extension (aka "root")
 	:e returns the extension of the path (aka "end")
 	Allow mods to be chained, eg :h:h:e
-	substitute (/match/replacement/) or $(replace $(<name>),<match>,<replacement>)
-	substring (:offset[:length]) or $(substr $(<name>),offset[,length])
+	/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
+	:offset[:length] substring or $(substr $(<name>),offset[,length])
 $(exec <shell_command>)
 $(defined <name>)						"true" else "false"
 $(include <pathname>[, <text>]*)
@@ -22,15 +23,9 @@ $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
 $(// <any_freeform_comment_text>)		Or $(rem ...)?
 $(set <chars>)							Set special chars
-Trim arguments by default? - need modifier to preserve leading whitespace (eg, :n) (or use ,$<whitespace><text> escape after argsep)
-	Or don't trim by default and use :w on macro name
-Define distinct escape character, so allow:
-	\$() [escaped $]
-	$(...)\<newline> [non-skipped blank line]
-	$(xxx a\,b) [single arg containing comma]
-	$(yyy a,\ b) [non-trimmed leading space in arg]
 
 Best practice for reporting errors? (not fatal exceptions)
+Best practice for versioning executable
 Report errors with file/source/line/column location
 Memory leak detection for unit tests
 Asserts
@@ -65,5 +60,10 @@ $(if <text>)						"", "0", or "false" (case insensitive) are false - everything 
 $(elseif <text>)
 $(else)
 $(endif)
-Allow customizable escape char
-Escape argSep and closing characters embedded in arguments
+Define (customizable) distinct escape character, so allow:
+	\$() [escaped $]
+	$(...)\<newline> [non-skipped blank line]
+	$(xxx a\,b) [single arg contains embedded comma]
+	$(yyy a,\ b ) [non-trimmed leading & trailing space in arg]
+	$(zzz abc\), def) [first arg contains embedded closing paren]
+Trim arguments by default - use ,$<whitespace><text> escape after argsep (need modifier to preserve whitespace for all args. Eg, :n)
