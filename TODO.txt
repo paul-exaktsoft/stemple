@@ -2,6 +2,12 @@ TODO:
 Get rid of std::shared_ptr for input and output streams
 Maintain a separate putback store with position from original stream
 Cull eof streams just before read - so top stream (and position) stays active all the time c is in play
+$(not) and $(or) should be n-ary, not just binary
+C-only interface
+Best practice for reporting errors? (not fatal exceptions)
+Report errors with file/source/line/column location
+Best practice for versioning executable
+Memory leak detection for unit tests
 Variable substitution:
 $(<name>:<mods>)						<mods> modify expansion, like csh
 	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?
@@ -16,7 +22,6 @@ $(<name>:<mods>)						<mods> modify expansion, like csh
 	:s/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
 	:offset[:length] substring or $(substr $(<name>),offset[,length])
 Allow mods to be chained, eg :h:h:e
-$(not) and $(or) should be n-ary, not just binary
 $(exec <shell_command>)
 $((<expr>))								Substitute result of evaluated arithmetic expression
 $(if <expr>)							<expr> is arithmetic or logical expression (or use $(if $((x > 0))) maybe?)
@@ -26,17 +31,14 @@ $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
 $(// <any_freeform_comment_text>)		Or $(rem ...)?
 $(set <chars>)							Set special chars
-C-only interface
-Best practice for reporting errors? (not fatal exceptions)
-Best practice for versioning executable
-Report errors with file/source/line/column location
-Memory leak detection for unit tests
 Asserts
 CMakeLists.txt
 Test building with Xcode and Linux Makefile
 Define IFS for array separator
-Error handling
-Verbosity
+Array indexing
+$() macro to look up values in Excel (or Google Sheets) (or a SQL db) (or MongoDB)
+$() macro to insert a numbered line from a file (or a range of lines, with column range(s) too)
+Verbosity - report files opening/closing - file/macro/line/word/char counts - time? - expansion factor
 
 DONE:
 $(<name>)								<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
