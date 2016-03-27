@@ -148,7 +148,15 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
-	void Expander::Expand (ostream &output)
+	bool Expander::Expand (shared_ptr<istream> &input, const string &inputName, shared_ptr<ostream> &output)
+	{
+		inStreams.push_front(make_shared<InStream>(input, inputName));
+		expand(*output);
+		return true;
+	}
+
+	//--------------------------------------------------------------------------
+	void Expander::expand (ostream &output)
 	{
 		string leadingWhitespace;
 		bool graphSeen = false;
@@ -200,7 +208,7 @@ namespace stemple
 	{
 		inStreams.push_front(make_shared<InStream>(inputString, source));
 		ostringstream output;
-		Expand(output);
+		expand(output);
 		return output.str();
 	}
 
@@ -342,7 +350,7 @@ end:
 				// Process builtin directive
 				return builtinEntry->second(args);
 			} else if (is_number(name)) {
-				// Macro is an argument to a previous expansion. Look for the
+				// Macro is an argument to an enclosing expansion. Look for the
 				// closest 'parent' macro body and get its associated arguments.
 				InStream *baseStream = findInStreamWithArgs();
 				if (baseStream) {
@@ -792,7 +800,7 @@ end:
 		if (args.size() == 1) {
 			bool defined = false;
 			if (is_number(args[0])) {
-				// Macro is an argument to a previous expansion. Look for the
+				// Lookup argument to an enclosing expansion. Look for the
 				// closest 'parent' macro body and get its associated arguments.
 				InStream *baseStream = findInStreamWithArgs();
 				if (baseStream) {

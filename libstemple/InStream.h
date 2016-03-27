@@ -61,6 +61,16 @@ namespace stemple
 		}
 
 		//----------------------------------------------------------------------
+		InStream (std::shared_ptr<std::istream> &stream, const std::string &source,
+				  const std::vector<std::string> &args = {}, bool isolated = false) :
+			base(stream),
+			source(source),
+			args(args),
+			isolated(isolated)
+		{
+		}
+
+		//----------------------------------------------------------------------
 		virtual ~InStream ()
 		{
 		}

@@ -20,7 +20,7 @@ namespace stemple
 
 		std::string Expand (const std::string &input);
 
-		void Expand (std::ostream &output);
+		bool Expand (std::shared_ptr<std::istream> &input, const std::string &inputName, std::shared_ptr<std::ostream> &output);
 
 		void SetMacro (const std::string &name, const std::string &body, bool simple = false);
 
@@ -28,6 +28,8 @@ namespace stemple
 
 	protected:
 		std::string expand (const std::string &input, const std::string &source);
+
+		void expand (std::ostream &output);
 
 		bool processDirective ();
 

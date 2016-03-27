@@ -1,4 +1,5 @@
 TODO:
+Get rid of std::shared_ptr for input and output streams
 Variable substitution:
 $(<name>:<mods>)						<mods> modify expansion, like csh
 	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?
@@ -34,12 +35,6 @@ Test building with Xcode and Linux Makefile
 Define IFS for array separator
 Error handling
 Verbosity
-Implement stemple command:
-	-D|--define(=| )<text>			Define macro
-	-h|--help				
-	-v|--verbose			
-	-V|--version			
-	<pathname>...			Files to expand
 
 DONE:
 $(<name>)								<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
@@ -69,10 +64,18 @@ Define (customizable) distinct escape character, so allow:
 Trim arguments by default - use ,$<whitespace><text> escape after argsep (need modifier to preserve whitespace for all args. Eg, :n)
 $(env <var>)
 $(include <pathname>[, <text>]*)
-$(equal <text>, <pattern>)					"true" else "false"
+$(equal <text>, <pattern>)				"true" else "false"
 $(notequal <text>, <pattern>)
 $(match <text>, <regex>)
 $(and <text>, <text>)
 $(or <text>, <text>)
 $(not <text>, <text>)
 $(defined <name>)						"true" else "false"
+Implement stemple command:
+	-D|-dname[=text]
+	-D|-d|--define name[=text]		Define macro
+	-h|--help				
+	-v|--verbose			
+	-V|--version			
+	-c|--chars <specials>
+	input output					Files or stdin/stdout (name can be -)
