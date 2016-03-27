@@ -1,6 +1,8 @@
 TODO:
+$(eq <text>, <pattern>)					"true" else "false" - <pattern> can be RE
+$(ne <text>, <pattern>)	
 Variable substitution:
-$(<name>:<mods>)						<mods> modify expansion, like csh or bash
+$(<name>:<mods>)						<mods> modify expansion, like csh
 	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?
 	:n do not trim whitespace from arguments before expansion
 	:l/:u change case or $(lower $(<name>))
@@ -14,16 +16,14 @@ $(<name>:<mods>)						<mods> modify expansion, like csh or bash
 	:offset[:length] substring or $(substr $(<name>),offset[,length])
 $(exec <shell_command>)
 $(defined <name>)						"true" else "false"
-$(include <pathname>[, <text>]*)
 $((<expr>))								Substitute result of evaluated arithmetic expression
 $(if <expr>)							<expr> is arithmetic or logical expression (or use $(if $((x > 0))) maybe?)
-$(env <var>)
 $(*[:<offset>[:<length>]])				All arguments (or a subset) [What separator? ' ' or ','? Or user-defined?]
 $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
 $(// <any_freeform_comment_text>)		Or $(rem ...)?
 $(set <chars>)							Set special chars
-
+C-only interface
 Best practice for reporting errors? (not fatal exceptions)
 Best practice for versioning executable
 Report errors with file/source/line/column location
@@ -67,3 +67,5 @@ Define (customizable) distinct escape character, so allow:
 	$(yyy a,\ b ) [non-trimmed leading & trailing space in arg]
 	$(zzz abc\), def) [first arg contains embedded closing paren]
 Trim arguments by default - use ,$<whitespace><text> escape after argsep (need modifier to preserve whitespace for all args. Eg, :n)
+$(env <var>)
+$(include <pathname>[, <text>]*)

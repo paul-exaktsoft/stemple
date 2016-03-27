@@ -74,6 +74,8 @@ namespace stemple
 		bool Expander::do_else (const std::vector<std::string> &args);
 		bool Expander::do_elseif (const std::vector<std::string> &args);
 		bool Expander::do_endif (const std::vector<std::string> &args);
+		bool Expander::do_env (const std::vector<std::string> &args);
+		bool Expander::do_include (const std::vector<std::string> &args);
 
 		std::list<std::shared_ptr<InStream>> inStreams;
 		std::map<std::string, Macro> macros;

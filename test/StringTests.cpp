@@ -277,7 +277,26 @@ TEST_F(StringTests, MacroWithTrimmedArguments)
 TEST_F(StringTests, MacroWithNonTrimmedArguments)
 {
 	expander.SetMacro("args", "'$(1)'; '$(2)'; '$(3)'");
-	// NOTE: Doubling the escape stops get() from seeing $\n and eating the escape before collectArgs() can see it
+	// NOTE: Doubling the last escape stops get() from seeing $\n and eating the escape before collectArgs() can see it
 	string expansion = expander.Expand("Args: $(args\tone,   $ two ,$$\nthree\t ).");
 	ASSERT_EQ("Args: 'one'; ' two '; '\nthree\t '.", expansion);
+}
+
+TEST_F(StringTests, PathEnvVar)
+{
+	string expansion = expander.Expand("$(env PATH)");
+	ASSERT_TRUE(expansion.length() > 0);
+}
+
+TEST_F(StringTests, Include)
+{
+	string name = tmpnam(nullptr);
+	ofstream ofs(name);
+	ofs << "$(A)$(1)" << endl;
+	ofs.close();
+	expander.SetMacro("A", "aaa");
+	string expansion = expander.Expand("$(include " + name + ", bbb)");
+	ASSERT_EQ("aaabbb\n", expansion);
+	expansion = expander.Expand("$(include " + name + ")");
+	ASSERT_EQ("aaa\n", expansion);
 }

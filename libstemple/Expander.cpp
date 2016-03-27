@@ -76,17 +76,19 @@ namespace stemple
 {
 
 	//--------------------------------------------------------------------------
-	Expander::Expander ():
+	Expander::Expander () :
 		trimArgs(true),
 		directiveSeen(false),
 		skipping(0)
 	{
 		SetSpecialChars('$', '(', ')', ',', '$');
 		builtins = {
-			{ "if",		bind(&Expander::do_if,		this, _1) },
-			{ "else",	bind(&Expander::do_else,	this, _1) },
-			{ "elseif",	bind(&Expander::do_elseif,	this, _1) },
-			{ "endif",	bind(&Expander::do_endif,	this, _1) },
+			{ "if",			bind(&Expander::do_if,		this, _1) },
+			{ "else",		bind(&Expander::do_else,	this, _1) },
+			{ "elseif",		bind(&Expander::do_elseif,	this, _1) },
+			{ "endif",		bind(&Expander::do_endif,	this, _1) },
+			{ "env",		bind(&Expander::do_env,		this, _1) },
+			{ "include",	bind(&Expander::do_include,	this, _1) },
 		};
 	}
 
@@ -271,32 +273,32 @@ end:
 			Token tok = getToken();
 			switch (tok) {
 			case ARGS:
-				{
-					args = collectArgs(trimArgs);
-					tok = getToken();	// Get closing ')'
-				}
-				break;
+			{
+				args = collectArgs(trimArgs);
+				tok = getToken();	// Get closing ')'
+			}
+			break;
 			case ASSIGN:
 			case SIMPLE_ASSIGN:
 			case APPEND:
 			case SIMPLE_APPEND:
-				{
-					bool append = tok == APPEND || tok == SIMPLE_APPEND;
-					bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
-					string text = collectString(textEndChars, simple);
-					tok = getToken();	// Get closing ')'
-					if (append) {
-						auto macro = macros.find(name);
-						if (macro != end(macros)) {
-							macro->second.GetBody() += text;
-						} else {
-							SetMacro(name, text);
-						}
+			{
+				bool append = tok == APPEND || tok == SIMPLE_APPEND;
+				bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
+				string text = collectString(textEndChars, simple);
+				tok = getToken();	// Get closing ')'
+				if (append) {
+					auto macro = macros.find(name);
+					if (macro != end(macros)) {
+						macro->second.GetBody() += text;
 					} else {
 						SetMacro(name, text);
 					}
-					return true;
+				} else {
+					SetMacro(name, text);
 				}
+				return true;
+			}
 			case MOD:
 				break;
 			case CLOSE:
@@ -411,7 +413,7 @@ end:
 		// Look for trailing whitespace
 		size_t j = s.length() - 1;
 		if (!escaped) {	// TODO: escape before leading whitespace also preserves trailing whitespace - make it configurable?
-			for ( ; j >= i; -- j) {
+			for (; j >= i; -- j) {
 				if (!isspace(s[j])) {
 					break;
 				}
@@ -636,6 +638,30 @@ end:
 			}
 			ifContext.pop();
 			return true;
+		}
+		return false;
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_env (const vector<string> &args)
+	{
+		if (args.size() && args[0].size()) {
+			const char *env = getenv(args[0].c_str());
+			if (env) {
+				inStreams.push_front(make_shared<InStream>(env, args[0] + " environment variable"));
+			}
+			return true;
+		}
+		return false;
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::do_include (const vector<string> &args)
+	{
+		if (args.size() && args[0].size()) {
+			const vector<string> restArgs(args.begin() + 1, args.end());
+			inStreams.push_front(make_shared<InStream>(args[0], restArgs));
+			return inStream().GetStream().good();
 		}
 		return false;
 	}

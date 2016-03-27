@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <cstring>
+#include <cstdlib>
 
 #include "InStream.h"
 #include "Macro.h"
