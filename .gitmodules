@@ -1,3 +1,4 @@
 [submodule "test/googletest"]
 	path = test/googletest
 	url = git@github.com:pcashdown/googletest.git
+	branch = stemple-branch
