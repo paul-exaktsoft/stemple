@@ -7,7 +7,7 @@
 int main (int argc, char **argv)
 {
 #if 0
-	argv[1] = (char *)"--gtest_filter=StringTests.Include";
+	argv[1] = (char *)"--gtest_filter=StringTests.MultipleMacrosAndEscapes";
 	argc = 2;
 #endif
 	::testing::InitGoogleTest(&argc, argv);

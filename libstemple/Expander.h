@@ -70,7 +70,9 @@ namespace stemple
 			return !inStreams.size() || inStream().bad();
 		}
 
-		bool putback (const char &ch);
+		bool putback (const char &c);
+
+		bool putback (const std::string &s, const std::string &streamName, const std::vector<std::string> &args = {});
 
 		bool do_if (const std::vector<std::string> &args);
 		bool do_else (const std::vector<std::string> &args);
@@ -101,12 +103,6 @@ namespace stemple
 		bool trimArgs;				// Trim whitespace from argument strings by default
 		bool directiveSeen;			// A directive has been processed on the current line
 		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/else/elseif
-
-		// The current character was the last character of this stream, which
-		// was popped off the stack because it was at EOF. If we have to put
-		// back the current character, this stream will need to be pushed back
-		// onto the stack again.
-		std::shared_ptr<InStream> putbackStream;
 
 		// A stack of descriptors for processing nested block if/else/elseifs
 		struct IfContext

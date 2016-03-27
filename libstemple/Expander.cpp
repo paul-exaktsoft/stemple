@@ -210,7 +210,7 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	string Expander::expand (const string &inputString, const string &source)
 	{
-		inStreams.push_front(make_shared<InStream>(inputString, source));
+		putback(inputString, source);
 		ostringstream output;
 		expand(output);
 		return output.str();
@@ -219,6 +219,14 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	bool Expander::get (char &c, bool expand)
 	{
+		// If we've reached the end of the current stream, detect it now. We
+		// don't want the next istream::get() to return eof, since we want
+		// the next character to come from the 'parent' stream if there is one.
+		while (inStreams.size() && inStream().peek() == char_traits<char>::eof()) {
+			inStreams.pop_front();
+		}
+
+		// End of input?
 		if (!inStreams.size()) {
 			c = '\0';
 			DBG("get(): EOF\n");
@@ -233,45 +241,31 @@ namespace stemple
 
 		DBG("get(): x=%s (%s)\n", printchar(x), inStreams.front()->GetSource().c_str());
 
-		// If we've reached the end of the current stream, detect it now. We
-		// won't wait for the next istream::get() to return eof, since we want
-		// the next character to come from the 'parent' stream if there is one.
-		if (inStream().peek() == char_traits<char>::eof()) {
-			if (inStreams.size()) {
-				putbackStream = inStreams.front();
-				inStreams.pop_front();
+		if (x == escapeChar) {
+			// Handle escape
+			char p = peek();
+			if (p == introChar || p == escapeChar) {
+				// Escaped '$' cannot start a macro
+				if (!inStream().get(x)) return false;	// Eat '$' so it doesn't trigger a macro on the next call
+				goto end;
+			} else if (p == '\n') {
+				// Escaped newline causes blank line to be output, even if
+				// it contains only a non-printing directive
+				directiveSeen = false;
+				get(x);	// Get the newline, skipping the escape
+				goto end;
 			}
-		} else {
-			putbackStream = nullptr;
 		}
-
-		if (!eof()) {
-			if (x == escapeChar) {
-				// Handle escape
-				char p = peek();
-				if (p == introChar || p == escapeChar) {
-					// Escaped '$' cannot start a macro
-					if (!inStream().get(x)) return false;	// Eat '$' so it doesn't trigger a macro on the next call
-					goto end;
-				} else if (p == '\n') {
-					// Escaped newline causes blank line to be output, even if
-					// it contains only a non-printing directive
-					directiveSeen = false;
-					get(x);	// Get the newline, skipping the escape
-					goto end;
-				}
-			}
-			if (expand && x == introChar) {
-				// Handle macro expansion and stemple directives
-				if (peek() == openChar) {
-					// Start of a stemple directive
-					if (get(x)) {	// Eat opening '('
-						if (processDirective()) {
-						}
-						// Get first character of expansion, or character following ')'
-						if (!get(x)) {
-							return false;
-						}
+		if (expand && x == introChar) {
+			// Handle macro expansion and stemple directives
+			if (peek() == openChar) {
+				// Start of a stemple directive
+				if (get(x)) {	// Eat opening '('
+					if (processDirective()) {
+					}
+					// Get first character of expansion, or character following ')'
+					if (!get(x)) {
+						return false;
 					}
 				}
 			}
@@ -362,7 +356,7 @@ end:
 				InStream *baseStream = findInStreamWithArgs();
 				if (baseStream) {
 					int index = atoi(name.c_str()) - 1;
-					inStreams.push_front(make_shared<InStream>(baseStream->GetArg(index), baseStream->GetSource() + ", arg " + name));
+					putback(baseStream->GetArg(index), baseStream->GetSource() + ", arg " + name);
 					return true;
 				}
 			} else {
@@ -371,7 +365,7 @@ end:
 				if (macroEntry != end(macros)) {
 					string text = macroEntry->second.GetBody();
 					if (text.length()) {
-						inStreams.push_front(make_shared<InStream>(macroEntry->second.GetBody(), string("Body of ") + name, args));
+						putback(macroEntry->second.GetBody(), string("Body of ") + name, args);
 					}
 					return true;
 				}
@@ -509,7 +503,7 @@ end:
 				if (whitespace.length() > 0) {
 					putback(c);
 					if (whitespace.length() > 1) {
-						inStreams.push_front(make_shared<InStream>(whitespace.substr(1, whitespace.size() - 1), "Whitespace putback"));
+						putback(whitespace.substr(1, whitespace.size() - 1), "Whitespace putback");
 					}
 					return ARGS;
 				}
@@ -563,26 +557,17 @@ end:
 	//--------------------------------------------------------------------------
 	bool Expander::putback (const char &c)
 	{
-		if (putbackStream) {
-			// current character came from a stream that has since been popped
-			// (because c was its last character). We keep track of the most
-			// recently popped stream until the next call to get() clears it.
-			inStreams.push_front(putbackStream);
-			inStream().putback(c);
-			putbackStream = nullptr;
-		} else if (!inStreams.size() || inStream().tellg() == streampos(0)) {
-			// If no current stream, or stream is at start (because c was
-			// obtained from a nested stream that has now been popped), then
-			// push a new stream
-			inStreams.push_front(make_shared<InStream>(string(1, c), "Putback"));
-		} else {
-//			// Putback on the current stream
-//			inStream().putback(c);
-//			if (!inStream().good()) {
-//				DBG("putback() c=%s failed for %s\n", printchar(c), inStream().GetSource().c_str());
-//			}
-			inStreams.push_front(make_shared<InStream>(string(1, c), "Putback"));
-		}
+		// Putback, for std::ifstream in particular, seems to be problematic (in
+		// my Mac OS X port, it seems to always fail). So maintain a separate
+		// putback area. The simplest way to do this is to push a new InStream.
+		// TODO: Optimize single-character putback to use a lighter-weight mechanism?
+		return putback(string(1, c), "Putback");
+	}
+
+	//--------------------------------------------------------------------------
+	bool Expander::putback (const string &s, const string &streamName, const vector<string> &args)
+	{
+		inStreams.push_front(make_shared<InStream>(s, streamName, args));
 		return good();
 	}
 
@@ -597,9 +582,9 @@ end:
 			// Inline form
 			if (!skipping) {
 				if (testResult) {
-					inStreams.push_front(make_shared<InStream>(args[1], "True branch"));
+					putback(args[1], "True branch");
 				} else if (args.size() > 2) {
-					inStreams.push_front(make_shared<InStream>(args[2], "False branch"));
+					putback(args[2], "False branch");
 				}
 			}
 			return true;
@@ -696,7 +681,7 @@ end:
 		if (args.size() && args[0].size()) {
 			const char *env = getenv(args[0].c_str());
 			if (env) {
-				inStreams.push_front(make_shared<InStream>(env, args[0] + " environment variable"));
+				putback(env, args[0] + " environment variable");
 			}
 			return true;
 		} else {
@@ -724,11 +709,11 @@ end:
 	bool Expander::do_equal (const vector<string> &args)
 	{
 		if (args.size() > 1) {
-			inStreams.push_front(make_shared<InStream>(compare(args[0], args[1]) ? "1" : "0", "Equal result"));
+			putback(compare(args[0], args[1]) ? "1" : "0", "Equal result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "Equal error"));
+			putback("0", "Equal error");
 			return false;
 		}
 	}
@@ -739,11 +724,11 @@ end:
 	bool Expander::do_notequal (const vector<string> &args)
 	{
 		if (args.size() > 1) {
-			inStreams.push_front(make_shared<InStream>(!compare(args[0], args[1]) ? "1" : "0", "Notequal result"));
+			putback(!compare(args[0], args[1]) ? "1" : "0", "Notequal result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "Notequal error"));
+			putback("0", "Notequal error");
 			return false;
 		}
 	}
@@ -757,11 +742,11 @@ end:
 		if (args.size() > 1) {
 			regex pattern(args[1] /*, regex_constants::icase*/);
 			bool match = regex_search(args[0], pattern);
-			inStreams.push_front(make_shared<InStream>(match ? "1" : "0", "Match result"));
+			putback(match ? "1" : "0", "Match result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "Match error"));
+			putback("0", "Match error");
 			return false;
 		}
 	}
@@ -770,11 +755,11 @@ end:
 	bool Expander::do_and (const vector<string> &args)
 	{
 		if (args.size() > 1) {
-			inStreams.push_front(make_shared<InStream>(textToBool(args[0]) && textToBool(args[1]) ? "1" : "0", "And result"));
+			putback(textToBool(args[0]) && textToBool(args[1]) ? "1" : "0", "And result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "And error"));
+			putback("0", "And error");
 			return false;
 		}
 	}
@@ -783,11 +768,11 @@ end:
 	bool Expander::do_or (const vector<string> &args)
 	{
 		if (args.size() > 1) {
-			inStreams.push_front(make_shared<InStream>(textToBool(args[0]) || textToBool(args[1]) ? "1" : "0", "Or result"));
+			putback(textToBool(args[0]) || textToBool(args[1]) ? "1" : "0", "Or result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "Or error"));
+			putback("0", "Or error");
 			return false;
 		}
 	}
@@ -796,11 +781,11 @@ end:
 	bool Expander::do_not (const vector<string> &args)
 	{
 		if (args.size() == 1) {
-			inStreams.push_front(make_shared<InStream>(!textToBool(args[0]) ? "1" : "0", "Not result"));
+			putback(!textToBool(args[0]) ? "1" : "0", "Not result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "Not error"));
+			putback("0", "Not error");
 			return false;
 		}
 	}
@@ -823,11 +808,11 @@ end:
 				auto macroEntry = macros.find(args[0]);
 				defined = macroEntry != end(macros);
 			}
-			inStreams.push_front(make_shared<InStream>(defined ? "1" : "0", "Defined result"));
+			putback(defined ? "1" : "0", "Defined result");
 			return true;
 		} else {
 			// TODO: Report error
-			inStreams.push_front(make_shared<InStream>("0", "Defined error"));
+			putback("0", "Defined error");
 			return false;
 		}
 	}

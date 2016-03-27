@@ -1,7 +1,6 @@
 TODO:
 Get rid of std::shared_ptr for input and output streams
-Maintain a separate putback store with position from original stream
-Cull eof streams just before read - so top stream (and position) stays active all the time c is in play
+Maintain a separate putback store with position from original stream for each character
 $(not) and $(or) should be n-ary, not just binary
 C-only interface
 Best practice for reporting errors? (not fatal exceptions)
@@ -39,6 +38,7 @@ Array indexing
 $() macro to look up values in Excel (or Google Sheets) (or a SQL db) (or MongoDB)
 $() macro to insert a numbered line from a file (or a range of lines, with column range(s) too)
 Verbosity - report files opening/closing - file/macro/line/word/char counts - time? - expansion factor
+Doxygen comments
 
 DONE:
 $(<name>)								<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
@@ -83,3 +83,4 @@ Implement stemple command:
 	-V|--version			
 	-c|--chars <specials>
 	input output					Files or stdin/stdout (name can be -)
+Cull eof streams just before read - so top stream (and position) stays active all the time c is in play
