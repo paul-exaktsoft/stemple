@@ -85,12 +85,23 @@ namespace stemple
 		std::string argEndChars;	// Set of terminating chars
 		std::string textEndChars;	// Set of terminating chars
 		bool directiveSeen;			// A directive has been processed on the current line
+		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/else/elseif
 
 		// The current character was the last character of this stream, which
-		// was popped off the stack because it was at EOF. If we need to put
-		// back the current character, this stream will have to be pushed back
+		// was popped off the stack because it was at EOF. If we have to put
+		// back the current character, this stream will need to be pushed back
 		// onto the stack again.
 		std::shared_ptr<InStream> putbackStream;
+
+		// A stack of descriptors for processing nested block if/else/elseifs
+		struct IfContext
+		{
+			enum Phase { ElseOrEnd, EndOnly};
+			Phase phase;
+			bool branchTaken;
+			bool isSkipping;
+		};
+		std::stack<IfContext> ifContext;
 	};
 }
 

@@ -117,3 +117,130 @@ TEST_F(StringTests, InlineIfThenElse)
 	string expansion = expander.Expand("$(IF=$(if $(A),True,False))\n$(IF)\n$(A=aaa)\n$(IF)\n$(A=0)\n$(IF)\n");
 	ASSERT_EQ("False\nTrue\nFalse\n", expansion);
 }
+
+TEST_F(StringTests, InlineIfOnly)
+{
+	string expansion = expander.Expand("$(IF=$(if $(A),$(A)=>True))\n$(IF)\n$(A=aaa)\n$(IF)\n$(A=0)\n$(IF)\n");
+	ASSERT_EQ("aaa=>True\n", expansion);
+}
+
+TEST_F(StringTests, SimpleBlockIfTrue)
+{
+	string expansion = expander.Expand("Before\n$(if 1)\nTrue\n$(endif)\nAfter\n");
+	ASSERT_EQ("Before\nTrue\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, SimpleBlockIfFalse)
+{
+	string expansion = expander.Expand("Before\n$(if 0)\nTrue\n$(endif)\nAfter\n");
+	ASSERT_EQ("Before\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, SimpleBlockIfElseTrue)
+{
+	string expansion = expander.Expand("Before\n$(if 1)\nTrue\n$(else)\nFalse\n$(endif)\nAfter\n");
+	ASSERT_EQ("Before\nTrue\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, SimpleBlockIfElseFalse)
+{
+	string expansion = expander.Expand("Before\n$(if 0)\nTrue\n$(else)\nFalse\n$(endif)\nAfter\n");
+	ASSERT_EQ("Before\nFalse\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, NestedBlockIfElse)
+{
+	string input = "Before\n"
+		"$(if $(A))\n"
+		"  A True\n"
+		"  $(if $(B))\n"
+		"    B True\n"
+		"  $(else)\n"
+		"    B False\n"
+		"  $(endif)\n"
+		"$(else)\n"
+		"  A False\n"
+		"$(endif)\n"
+		"After\n";
+	expander.SetMacro("A", "1");
+	expander.SetMacro("B", "0");
+	string expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A True\n    B False\nAfter\n", expansion);
+	expander.SetMacro("A", "0");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A False\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, MultipleNestedBlockIfs)
+{
+	string input = "Before\n"
+		"$(if $(A))\n"
+		"  A True\n"
+		"  $(if $(B))\n"
+		"    B True\n"
+		"  $(else)\n"
+		"    B False\n"
+		"  $(endif)\n"
+		"  D=$(if $(D),True,False)\n"
+		"$(else)\n"
+		"  A False\n"
+		"  $(if $(C))\n"
+		"    C True\n"
+		"  $(else)\n"
+		"    C False\n"
+		"  $(endif)\n"
+		"  E=$(if $(E),True,False)\n"
+		"$(endif)\n"
+		"After\n";
+	expander.SetMacro("A", "1");
+	expander.SetMacro("B", "1");
+	expander.SetMacro("C", "1");
+	expander.SetMacro("D", "1");
+	expander.SetMacro("E", "1");
+	string expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A True\n    B True\n  D=True\nAfter\n", expansion);
+	expander.SetMacro("B", "0");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A True\n    B False\n  D=True\nAfter\n", expansion);
+	expander.SetMacro("D", "0");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A True\n    B False\n  D=False\nAfter\n", expansion);
+	expander.SetMacro("A", "0");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A False\n    C True\n  E=True\nAfter\n", expansion);
+	expander.SetMacro("C", "0");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A False\n    C False\n  E=True\nAfter\n", expansion);
+	expander.SetMacro("E", "0");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A False\n    C False\n  E=False\nAfter\n", expansion);
+}
+
+TEST_F(StringTests, BlockElseifs)
+{
+	string input = "Before\n"
+		"$(if $(A))\n"
+		"  A True\n"
+		"$(elseif $(B))\n"
+		"  B True\n"
+		"$(elseif $(C))\n"
+		"  C True\n"
+		"$(else)\n"
+		"  Nothing True\n"
+		"$(endif)\n"
+		"After\n";
+	expander.SetMacro("A", "1");
+	expander.SetMacro("B", "1");
+	expander.SetMacro("C", "1");
+	string expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  A True\nAfter\n", expansion);
+	expander.SetMacro("A", "false");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  B True\nAfter\n", expansion);
+	expander.SetMacro("B", "");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  C True\nAfter\n", expansion);
+	expander.SetMacro("C", "no");
+	expansion = expander.Expand(input);
+	ASSERT_EQ("Before\n  Nothing True\nAfter\n", expansion);
+}

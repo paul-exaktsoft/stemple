@@ -49,6 +49,29 @@ inline bool compare (const string &a, const string &b)
 	return a.compare(b) == 0;
 }
 
+//------------------------------------------------------------------------------
+// An RAII helper class that temporarily sets a variable and restores its old
+// value when the helper goes out of scope.
+
+template<typename T>
+class variable_guard
+{
+public:
+	variable_guard (T &variable, const T &new_value) :
+		variable(variable),
+		initial_value(variable)
+	{
+		variable = new_value;
+	}
+	~variable_guard ()
+	{
+		variable = initial_value;
+	}
+private:
+	T &variable;
+	T initial_value;
+};
+
 namespace stemple
 {
 
@@ -57,7 +80,9 @@ namespace stemple
 		introChar('$'),
 		openChar('('),
 		closeChar(')'),
-		argSepChar(',')
+		argSepChar(','),
+		directiveSeen(false),
+		skipping(0)
 	{
 		SetSpecialChars(introChar, openChar, closeChar, argSepChar);
 		builtins = {
@@ -105,40 +130,42 @@ namespace stemple
 		directiveSeen = false;
 		char c;
 		while (get(c)) {
-			if (c == '\n') {
-				if (!graphSeen) {
-					// Only output a blank line if we haven't processed any non-
-					// printing directives on it, otherwise skip.
-					if (!directiveSeen) {
-						output << leadingWhitespace;
-						DEBUG("put(): ws='%s'\n", leadingWhitespace);
+			if (!skipping) {
+				if (c == '\n') {
+					if (!graphSeen) {
+						// Only output a blank line if we haven't processed any non-
+						// printing directives on it, otherwise skip.
+						if (!directiveSeen) {
+							output << leadingWhitespace;
+							DEBUG("put(): ws='%s'\n", leadingWhitespace);
+							output.put('\n');
+							DEBUG("put(): c=%s\n", printchar(c));
+						}
+					} else {
 						output.put('\n');
 						DEBUG("put(): c=%s\n", printchar(c));
 					}
+					// Reset for new line...
+					leadingWhitespace.clear();
+					graphSeen = false;
+					directiveSeen = false;
+				} else if (isspace(c) && !graphSeen) {
+					// Collect leading whitespace rather than immediately outputting
+					// it. Then we can decide later if we want to skip a blank
+					// line containing just a non-printing directive or not.
+					leadingWhitespace.append(1, c);
 				} else {
-					output.put('\n');
+					if (!isspace(c) && !graphSeen) {
+						// Flush collected leading whitespace now that we're
+						// outputting a printing character on this line.
+						graphSeen = true;
+						if (leadingWhitespace.length()) {
+							output << leadingWhitespace;
+						}
+					}
+					output.put(c);
 					DEBUG("put(): c=%s\n", printchar(c));
 				}
-				// Reset for new line...
-				leadingWhitespace.clear();
-				graphSeen = false;
-				directiveSeen = false;
-			} else if (isspace(c) && !graphSeen) {
-				// Collect leading whitespace rather than immediately outputting
-				// it. Then we can decide later if we want to skip a blank
-				// line containing just a non-printing directive or not.
-				leadingWhitespace.append(1, c);
-			} else {
-				if (!isspace(c) && !graphSeen) {
-					// Flush collected leading whitespace now that we're
-					// outputting a printing character on this line.
-					graphSeen = true;
-					if (leadingWhitespace.length()) {
-						output << leadingWhitespace;
-					}
-				}
-				output.put(c);
-				DEBUG("put(): c=%s\n", printchar(c));
 			}
 		}
 	}
@@ -227,71 +254,79 @@ namespace stemple
 		string name = collectString(nameEndChars);
 
 		vector<string> args;
-		
-		// Examine token after first word
-		Token tok = getToken();
-		switch (tok) {
-		case ARGS:
-			{
-				args = collectArgs();
-				tok = getToken();	// Get closing ')'
-			}
-		break;
-		case ASSIGN:
-		case SIMPLE_ASSIGN:
-		case APPEND:
-		case SIMPLE_APPEND:
-			{
-				bool append = tok == APPEND || tok == SIMPLE_APPEND;
-				bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
-				string text = collectString(textEndChars, simple);
-				tok = getToken();	// Get closing ')'
-				if (append) {
-					auto macro = macros.find(name);
-					if (macro != end(macros)) {
-						macro->second.GetBody() += text;
+
+		{
+			// If this is an elseif directive, temporarily disable skipping so
+			// we can fully expand the argument to see if this branch should be
+			// taken or not.
+			variable_guard<int> guard(skipping, name == "elseif" ? 0 : skipping);
+
+			// Examine token after first word
+			Token tok = getToken();
+			switch (tok) {
+			case ARGS:
+				{
+					args = collectArgs();
+					tok = getToken();	// Get closing ')'
+				}
+				break;
+			case ASSIGN:
+			case SIMPLE_ASSIGN:
+			case APPEND:
+			case SIMPLE_APPEND:
+				{
+					bool append = tok == APPEND || tok == SIMPLE_APPEND;
+					bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
+					string text = collectString(textEndChars, simple);
+					tok = getToken();	// Get closing ')'
+					if (append) {
+						auto macro = macros.find(name);
+						if (macro != end(macros)) {
+							macro->second.GetBody() += text;
+						} else {
+							SetMacro(name, text);
+						}
 					} else {
 						SetMacro(name, text);
 					}
-				} else {
-					SetMacro(name, text);
+					return true;
 				}
-				return true;
+			case MOD:
+				break;
+			case CLOSE:
+				break;
+			case END:
+			case ERR:
+				break;
 			}
-		case MOD:
-			break;
-		case CLOSE:
-			break;
-		case END:
-		case ERR:
-			break;
 		}
 
 		// assert(tok == CLOSE);
 
-		auto builtinEntry = builtins.find(name);
-		if (builtinEntry != end(builtins)) {
-			// Process builtin directive
-			builtinEntry->second(args);
-			return true;
-		} else if (is_number(name)) {
-			// Macro is an argument to a previous expansion. Look for the
-			// closest 'parent' macro body and get its associated arguments.
-			InStream *baseStream = findInStreamWithArgs();
-			if (baseStream) {
-				int index = atoi(name.c_str()) - 1;
-				inStreams.push_front(make_shared<InStream>(baseStream->GetArg(index), baseStream->GetSource() + ", arg " + name));
-				return true;
-			}
-		} else {
-			// Lookup macro and insert replacement text if any
-			auto macroEntry = macros.find(name);
-			if (macroEntry != end(macros)) {
-				string text = macroEntry->second.GetBody();
-				if (text.length()) {
-					inStreams.push_front(make_shared<InStream>(macroEntry->second.GetBody(), string("Body of ") + name, args));
+		if (!skipping || name == "if" || name == "else" || name == "elseif" || name == "endif") {
+			auto builtinEntry = builtins.find(name);
+			if (builtinEntry != end(builtins)) {
+				// Process builtin directive
+				return builtinEntry->second(args);
+			} else if (is_number(name)) {
+				// Macro is an argument to a previous expansion. Look for the
+				// closest 'parent' macro body and get its associated arguments.
+				InStream *baseStream = findInStreamWithArgs();
+				if (baseStream) {
+					int index = atoi(name.c_str()) - 1;
+					inStreams.push_front(make_shared<InStream>(baseStream->GetArg(index), baseStream->GetSource() + ", arg " + name));
+					return true;
 				}
-				return true;
+			} else {
+				// Lookup macro and insert replacement text if any
+				auto macroEntry = macros.find(name);
+				if (macroEntry != end(macros)) {
+					string text = macroEntry->second.GetBody();
+					if (text.length()) {
+						inStreams.push_front(make_shared<InStream>(macroEntry->second.GetBody(), string("Body of ") + name, args));
+					}
+					return true;
+				}
 			}
 		}
 		return false;
@@ -444,7 +479,7 @@ namespace stemple
 			inStream().putback(c);
 			putbackStream = nullptr;
 		} else if (!inStreams.size() || inStream().tellg() == streampos(0)) {
-			// If no current stream, or stream is at start (because ch was
+			// If no current stream, or stream is at start (because c was
 			// obtained from a nested stream that has now been popped), then
 			// push a new stream
 			inStreams.push_front(make_shared<InStream>(string(1, c), "Putback"));
@@ -458,38 +493,100 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	bool Expander::do_if (const vector<string> &args)
 	{
-		if (args.size() == 1) {
-
-		} else if (args.size() == 2 || args.size() == 3) {
-			if (args[0] == "" ||
-				args[0] == "0" ||
-				compare(args[0], "false") ||
-				compare(args[0], "no")) {
-				if (args.size() > 2) {
+		bool testResult = false;
+		if (args.size() > 0) {
+			// TODO[PCA]: Trim args[0]
+			testResult = !(args[0] == "" ||
+						   args[0] == "0" ||
+						   compare(args[0], "false") ||
+						   compare(args[0], "no"));
+		}
+		if (args.size() > 1) {
+			// Inline form
+			if (!skipping) {
+				if (testResult) {
+					inStreams.push_front(make_shared<InStream>(args[1], "True branch"));
+				} else if (args.size() > 2) {
 					inStreams.push_front(make_shared<InStream>(args[2], "False branch"));
 				}
+			}
+		} else {
+			if (testResult) {
+				ifContext.push({ IfContext::Phase::ElseOrEnd, true, false });
 			} else {
-				inStreams.push_front(make_shared<InStream>(args[1], "True branch"));
+				ifContext.push({ IfContext::Phase::ElseOrEnd, false, true });
+				++ skipping;
 			}
 		}
-		return false;
+		return true;
 	}
 
 	//--------------------------------------------------------------------------
 	bool Expander::do_else (const vector<string> &args)
 	{
+		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
+			if (!ifContext.top().branchTaken) {
+				// assert: must currently be skipping
+				ifContext.top().isSkipping = false;
+				-- skipping;
+			} else {
+				if (!ifContext.top().isSkipping) {
+					ifContext.top().isSkipping = true;
+					++ skipping;
+				}
+			}
+			ifContext.top().phase = IfContext::Phase::EndOnly;
+			return true;
+		}
 		return false;
 	}
 
 	//--------------------------------------------------------------------------
 	bool Expander::do_elseif (const vector<string> &args)
 	{
+		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
+			if (!ifContext.top().branchTaken) {
+				bool testResult = false;
+				if (args.size() > 0) {
+					// TODO[PCA]: Trim args[0]
+					testResult = !(args[0] == "" ||
+								   args[0] == "0" ||
+								   compare(args[0], "false") ||
+								   compare(args[0], "no"));
+				}
+				if (testResult) {
+					if (ifContext.top().isSkipping) {
+						ifContext.top().isSkipping = false;
+						-- skipping;
+					}
+					ifContext.top().branchTaken = true;
+				} else {
+					if (!ifContext.top().isSkipping) {
+						ifContext.top().isSkipping = true;
+						++ skipping;
+					}
+				}
+			} else {
+				if (!ifContext.top().isSkipping) {
+					ifContext.top().isSkipping = true;
+					++ skipping;
+				}
+			}
+			return true;
+		}
 		return false;
 	}
 
 	//--------------------------------------------------------------------------
 	bool Expander::do_endif (const vector<string> &args)
 	{
+		if (ifContext.size()) {
+			if (ifContext.top().isSkipping) {
+				-- skipping;
+			}
+			ifContext.pop();
+			return true;
+		}
 		return false;
 	}
 }
