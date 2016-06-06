@@ -24,34 +24,46 @@ namespace stemple
 
 		void SetMacro (const std::string &name, const std::string &body, bool simple = false);
 
-		void SetSpecialChars (char intro, char open, char close, char argSep, char escape);
+		void SetSpecialChars (char escape, char intro, char open, char argSep, char close);
 
 	protected:
+		struct Mods
+		{
+			bool TrimArgs = true;
+			bool IgnoreCase = false;
+			bool ExpandArgs = true;
+			Mods (bool trimArgs = true) : TrimArgs(trimArgs), IgnoreCase(false), ExpandArgs(true)
+			{
+			}
+		};
+
 		std::string expand (const std::string &input, const std::string &source);
 
 		void expand (std::ostream &output);
 
-		bool processDirective ();
+		bool processDirective (const Position &introPos);
 
 		std::string collectString (const std::string &delims, bool expand = true);
 
-		ArgList collectArgs (bool trim);
+		ArgList collectArgs (bool trim, bool expand = true);
 
 		std::string trimWhitespace (const std::string &s);
 
 		enum Token { ARGS, ASSIGN, APPEND, MOD, SIMPLE_ASSIGN, SIMPLE_APPEND, CLOSE, END, ERR };
 
+		Token collectMods (Mods &mods);
+
 		Token getToken ();
 
-		inline InStream &inStream ()
+		inline InStream &currentStream ()
 		{
 			return *inStreams.front();
 		}
 
-		InStream *findInStream (std::function<bool(const std::shared_ptr<InStream> &ptr)> pred);
-		InStream *findInStreamWithNamePrefix (const std::string &prefix);
-		InStream *findInStreamWithArgs ();
-		InStream *findInStreamWithPath ();
+		InStream *findStream (std::function<bool(const std::shared_ptr<InStream> &ptr)> pred);
+		InStream *findStreamWithNamePrefix (const std::string &prefix);
+		InStream *findStreamWithArgs ();
+		InStream *findStreamWithPath ();
 
 		const std::path getCurrentPath ();
 
@@ -67,34 +79,37 @@ namespace stemple
 
 		bool putback (const std::string &s, const std::string &streamName, const ArgList &args = {});
 
-		bool do_if (const ArgList &args);
-		bool do_else (const ArgList &args);
-		bool do_elseif (const ArgList &args);
-		bool do_endif (const ArgList &args);
-		bool do_env (const ArgList &args);
-		bool do_include (const ArgList &args);
-		bool do_equal (const ArgList &args);
-		bool do_notequal (const ArgList &args);
-		bool do_match (const ArgList &args);
-		bool do_and (const ArgList &args);
-		bool do_or (const ArgList &args);
-		bool do_not (const ArgList &args);
-		bool do_defined (const ArgList &args);
+		bool do_if (const ArgList &args, const Mods &mods);
+		bool do_else (const ArgList &args, const Mods &mods);
+		bool do_elseif (const ArgList &args, const Mods &mods);
+		bool do_endif (const ArgList &args, const Mods &mods);
+		bool do_env (const ArgList &args, const Mods &mods);
+		bool do_include (const ArgList &args, const Mods &mods);
+		bool do_equal (const ArgList &args, const Mods &mods);
+		bool do_notequal (const ArgList &args, const Mods &mods);
+		bool do_match (const ArgList &args, const Mods &mods);
+		bool do_and (const ArgList &args, const Mods &mods);
+		bool do_or (const ArgList &args, const Mods &mods);
+		bool do_not (const ArgList &args, const Mods &mods);
+		bool do_defined (const ArgList &args, const Mods &mods);
 
 		std::list<std::shared_ptr<InStream>> inStreams;
 		std::map<std::string, Macro> macros;
-		std::map<std::string, std::function<bool(const ArgList &)>> builtins;
+		std::map<std::string, std::function<bool(const ArgList &, const Mods &)>> builtins;
 
 		char introChar;				// The start of a directive. Default: '$'
 		char openChar;				// The start of a directive body. Default: '('
 		char closeChar;				// The end of a directive. Default: ')'
 		char argSepChar;			// Separator between arguments. Default: ','
 		char escapeChar;			// Escapes other special chars. Default '$'
+		char modsChar;				// The start of modifiers to expansion. Default ':'
 		std::string nameEndChars;	// Set of terminating chars
 		std::string argEndChars;	// Set of terminating chars
 		std::string textEndChars;	// Set of terminating chars
+		std::string modEndChars;	// Set of terminating chars
 		bool trimArgs;				// Trim whitespace from argument strings by default
 		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/elseif/else
+		bool wasEscaped;			// Last character returned by get() was escaped
 
 		// A stack of descriptors for processing nested block ifs/elseifs/elses
 		struct IfContext

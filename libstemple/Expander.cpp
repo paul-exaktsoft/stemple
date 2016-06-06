@@ -18,21 +18,21 @@ namespace stemple
 		trimArgs(true),
 		skipping(0)
 	{
-		SetSpecialChars('$', '(', ')', ',', '$');
+		SetSpecialChars('$', '$', '(', ',', ')');
 		builtins = {
-			{ "if",			bind(&Expander::do_if,			this, _1) },
-			{ "else",		bind(&Expander::do_else,		this, _1) },
-			{ "elseif",		bind(&Expander::do_elseif,		this, _1) },
-			{ "endif",		bind(&Expander::do_endif,		this, _1) },
-			{ "env",		bind(&Expander::do_env,			this, _1) },
-			{ "include",	bind(&Expander::do_include,		this, _1) },
-			{ "equal",		bind(&Expander::do_equal,		this, _1) },
-			{ "notequal",	bind(&Expander::do_notequal,	this, _1) },
-			{ "match",		bind(&Expander::do_match,		this, _1) },
-			{ "and",		bind(&Expander::do_and,			this, _1) },
-			{ "or",			bind(&Expander::do_or,			this, _1) },
-			{ "not",		bind(&Expander::do_not,			this, _1) },
-			{ "defined",	bind(&Expander::do_defined,		this, _1) },
+			{ "if",			bind(&Expander::do_if,			this, _1, _2) },
+			{ "else",		bind(&Expander::do_else,		this, _1, _2) },
+			{ "elseif",		bind(&Expander::do_elseif,		this, _1, _2) },
+			{ "endif",		bind(&Expander::do_endif,		this, _1, _2) },
+			{ "env",		bind(&Expander::do_env,			this, _1, _2) },
+			{ "include",	bind(&Expander::do_include,		this, _1, _2) },
+			{ "equal",		bind(&Expander::do_equal,		this, _1, _2) },
+			{ "notequal",	bind(&Expander::do_notequal,	this, _1, _2) },
+			{ "match",		bind(&Expander::do_match,		this, _1, _2) },
+			{ "and",		bind(&Expander::do_and,			this, _1, _2) },
+			{ "or",			bind(&Expander::do_or,			this, _1, _2) },
+			{ "not",		bind(&Expander::do_not,			this, _1, _2) },
+			{ "defined",	bind(&Expander::do_defined,		this, _1, _2) },
 		};
 	}
 
@@ -42,16 +42,19 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
-	void Expander::SetSpecialChars (char intro, char open, char close, char argSep, char escape)
+	void Expander::SetSpecialChars (char escape, char intro, char open, char argSep, char close)
 	{
+		escapeChar = escape;
 		introChar = intro;
 		openChar = open;
-		closeChar = close;
 		argSepChar = argSep;
-		escapeChar = escape;
+		closeChar = close;
+		modsChar = ':';
 		(nameEndChars = " \t:+=") += closeChar;
 		(argEndChars = argSepChar) += closeChar;
 		textEndChars = closeChar;
+		modEndChars = " \t:+=";
+		if (modEndChars.find(modsChar) == string::npos) modEndChars += modsChar;
 	}
 
 	//--------------------------------------------------------------------------
@@ -91,10 +94,10 @@ namespace stemple
 		while (get(c)) {
 			if (!skipping) {
 				if (c == '\n') {
-					if (!inStream().GraphSeen) {
+					if (!currentStream().GraphSeen) {
 						// Only output a blank line if we haven't processed any non-
 						// printing directives on it, otherwise skip.
-						if (!inStream().DirectiveSeen) {
+						if (!currentStream().DirectiveSeen) {
 							output << leadingWhitespace;
 							DBG("put(): ws='%s'\n", leadingWhitespace.c_str());
 							output.put('\n');
@@ -106,18 +109,18 @@ namespace stemple
 					}
 					// Reset for new line...
 					leadingWhitespace.clear();
-					inStream().GraphSeen = false;
-					inStream().DirectiveSeen = false;
-				} else if (isspace(c) && !inStream().GraphSeen) {
+					currentStream().GraphSeen = false;
+					currentStream().DirectiveSeen = false;
+				} else if (isspace(c) && !currentStream().GraphSeen) {
 					// Collect leading whitespace rather than immediately outputting
 					// it. Then we can decide later if we want to skip a blank
 					// line containing just a non-printing directive or not.
 					leadingWhitespace.append(1, c);
 				} else {
-					if (!isspace(c) && !inStream().GraphSeen) {	// NOTE: using !isspace() instead of isgraph() - better for Unicode?
+					if (!isspace(c) && !currentStream().GraphSeen) {	// NOTE: using !isspace() instead of isgraph() - better for Unicode?
 						// Flush collected leading whitespace now that we're
 						// outputting a printing character on this line.
-						inStream().GraphSeen = true;
+						currentStream().GraphSeen = true;
 						if (leadingWhitespace.length()) {
 							output << leadingWhitespace;
 							DBG("put(): ws='%s'\n", leadingWhitespace.c_str());
@@ -134,10 +137,12 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	bool Expander::get (char &c, bool expand)
 	{
+		wasEscaped = false;
+
 		// If we've reached the end of the current stream, detect it now. We
 		// don't want the next istream::get() to return eof, since we want
 		// the next character to come from the 'parent' stream if there is one.
-		while (inStreams.size() && inStream().peek() == char_traits<char>::eof()) {
+		while (inStreams.size() && currentStream().peek() == char_traits<char>::eof()) {
 			inStreams.pop_front();
 		}
 
@@ -149,16 +154,16 @@ namespace stemple
 		}
 
 		char x;
-		if (!inStream().get(x)) {
+		if (!currentStream().get(x)) {
 			c = '\0';
 			DBG("get(): Error from InStream::get()\n");
 			return false;
 		}
 
-		DBG("get(): x=%s gs=%s (%s)\n", printchar(x), inStream().GraphSeen ? "true" : "false", inStream().GetPosition().GetCString());
+		DBG("get(): x=%s gs=%s (%s)\n", printchar(x), currentStream().GraphSeen ? "true" : "false", currentStream().GetPosition().GetCString());
 
 		// Treat single-character (putback) streams as ephemeral
-		if (inStream().IsCharStream()) {
+		if (currentStream().IsCharStream()) {
 			inStreams.pop_front();
 		}
 
@@ -167,13 +172,17 @@ namespace stemple
 			char p = peek();
 			if (p == introChar || p == escapeChar) {
 				// Escaped '$' cannot start a macro
-				if (!inStream().get(x)) return false;	// Eat '$' so it doesn't trigger a macro on the next call
+				if (!currentStream().get(x)) return false;	// Eat '$' so it doesn't trigger a macro on the next call
+				DBG("  esc: x=%s\n", printchar(x));
+				wasEscaped = true;
 				goto end;
 			} else if (p == '\n') {
-				// Escaped newline causes blank line to be output, even if
-				// it contains only a non-printing directive
-				inStream().DirectiveSeen = false;
-				get(x);	// Get the newline, skipping the escape
+				// Escaped newline causes blank line to be output, even if it
+				// contains only a non-printing directive
+				currentStream().DirectiveSeen = false;
+				if (!get(x)) return false;	// Get the newline, skipping the escape
+				DBG("  esc: x=%s\n", printchar(x));
+				wasEscaped = true;
 				goto end;
 			}
 		}
@@ -181,8 +190,9 @@ namespace stemple
 			// Handle macro expansion and stemple directives
 			if (peek() == openChar) {
 				// Start of a stemple directive
+				Position introPos = currentStream().GetPosition();
 				if (get(x)) {	// Eat opening '('
-					if (processDirective()) {
+					if (processDirective(introPos)) {
 					}
 					// Get first character of expansion, or character following ')'
 					if (!get(x)) {
@@ -199,13 +209,13 @@ end:
 	//--------------------------------------------------------------------------
 	bool Expander::good ()
 	{
-		return inStreams.size() && inStream().good();
+		return inStreams.size() && currentStream().good();
 	}
 
 	//--------------------------------------------------------------------------
 	bool Expander::eof ()
 	{
-		return !inStreams.size() ? true : inStream().eof();
+		return !inStreams.size() ? true : currentStream().eof();
 	}
 
 	//--------------------------------------------------------------------------
@@ -215,11 +225,12 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::processDirective ()
+	bool Expander::processDirective (const Position &introPos)
 	{
 		// We've seen opening "$(", now collect first token
 		string name = collectString(nameEndChars);
 
+		Mods mods(trimArgs);
 		ArgList args;
 
 		{
@@ -230,10 +241,15 @@ end:
 
 			// Examine token after first word
 			Token tok = getToken();
+
+			if (tok == MOD) {
+				tok = collectMods(mods);
+			}
+
 			switch (tok) {
 			case ARGS:
 			{
-				args = collectArgs(trimArgs);
+				args = collectArgs(mods.TrimArgs, mods.ExpandArgs);
 				tok = getToken();	// Get closing ')'
 			}
 			break;
@@ -242,7 +258,7 @@ end:
 			case APPEND:
 			case SIMPLE_APPEND:
 			{
-				inStream().DirectiveSeen = true;
+				currentStream().DirectiveSeen = true;
 				bool append = tok == APPEND || tok == SIMPLE_APPEND;
 				bool simple = tok == SIMPLE_ASSIGN || tok == SIMPLE_APPEND;
 				string text = collectString(textEndChars, simple);
@@ -259,8 +275,6 @@ end:
 				}
 				return true;
 			}
-			case MOD:
-				break;
 			case CLOSE:
 				break;
 			case END:
@@ -274,27 +288,38 @@ end:
 		if (!skipping || name == "if" || name == "else" || name == "elseif" || name == "endif") {
 			auto builtinEntry = builtins.find(name);
 			if (builtinEntry != end(builtins)) {
-				inStream().DirectiveSeen = true;
+				currentStream().DirectiveSeen = true;
 				// Process builtin directive
-				return builtinEntry->second(args);
+				DBG("expanding %s at %s:\n", name.c_str(), introPos.GetCString()); {
+					int n = 1; for (string a : args) DBG("    arg %d: %s\n", n++, a.c_str());
+				}
+				return builtinEntry->second(args, mods);
 			} else if (is_number(name)) {
 				// An argument to an enclosing expansion. Look for the closest
 				// 'enclosing' macro body and get its associated arguments.
-				InStream *baseStream = findInStreamWithArgs();
+				InStream *baseStream = findStreamWithArgs();
 				if (baseStream) {
 					int index = atoi(name.c_str()) - 1;
-					putback(baseStream->GetArg(index), string("Expansion of ") + baseStream->GetSource() + ", arg " + name);
+					DBG("expanding arg %s of %s at %s\n", name.c_str(), baseStream->GetSource().c_str(), introPos.GetCString());
+					putback(baseStream->GetArg(index), string("Expansion of arg ") + name + " of " + baseStream->GetSource());
 					return true;
+				} else {
+					DBG("empty expansion of arg %s at %s\n", name.c_str(), introPos.GetCString());
 				}
 			} else {
 				// Lookup macro and insert replacement text if any
 				auto macroEntry = macros.find(name);
 				if (macroEntry != end(macros)) {
 					string text = macroEntry->second.GetBody();
+					DBG("expanding %s at %s:\n", name.c_str(), introPos.GetCString()); {
+						int n = 1; for (string a : args) DBG("    arg %d: %s\n", n++, a.c_str());
+					}
 					if (text.length()) {
-						putback(macroEntry->second.GetBody(), string("Expansion of ") + name, args);
+						putback(text, string("Expansion of ") + name, args);
 					}
 					return true;
+				} else {
+					DBG("empty expansion of %s at %s\n", name.c_str(), introPos.GetCString());
 				}
 			}
 		}
@@ -341,17 +366,35 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	ArgList Expander::collectArgs (bool trim)
+	ArgList Expander::collectArgs (bool trim, bool expand)
 	{
 		ArgList args;
 		char c;
 		do {
-			string arg = collectString(argEndChars);
+			string arg = collectString(argEndChars, expand);
 			args.push_back(trim ? trimWhitespace(arg) : arg);
 			get(c);
 		} while (c == argSepChar);
 		putback(c);
 		return args;
+	}
+
+	//--------------------------------------------------------------------------
+	Expander::Token Expander::collectMods (Mods &mods)
+	{
+		Token tok;
+		do {
+			string mod = collectString(modEndChars);
+			if (mod == "n") {
+				mods.TrimArgs = false;
+			} else if (mod == "i") {
+				mods.IgnoreCase = true;
+			} else if (mod == "x") {
+				mods.ExpandArgs = false;
+			}
+			tok = getToken();
+		} while (tok == MOD);
+		return tok;
 	}
 
 	//--------------------------------------------------------------------------
@@ -393,13 +436,13 @@ end:
 	{
 		string whitespace;
 		char c;
-		while (get(c)) {
+		while (get(c, false)) {
 			if (isspace(c)) {
 				whitespace += c;
 			} else if (c == ':') {
-				if (get(c)) {
+				if (get(c, false)) {
 					if (c == '+') {
-						if (get(c)) {
+						if (get(c, false)) {
 							if (c == '=') {
 								return SIMPLE_APPEND;
 							} else {
@@ -409,19 +452,29 @@ end:
 						return ERR;
 					} else if (c == '=') {
 						return SIMPLE_ASSIGN;
-					} else {
+					} else if (modsChar == ':') {
 						putback(c);
 						return MOD;
 					}
 				}
-				return MOD;
+				if (modsChar == ':') {
+					return MOD;
+				} else {
+					return ERR;
+				}
 			} else if (c == '+') {
-				if (get(c)) {
+				if (get(c, false)) {
 					if (c == '=') {
 						return APPEND;
 					}
 				}
-				return ERR;
+				if (modsChar == '+') {
+					return MOD;
+				} else {
+					return ERR;
+				}
+			} else if (c == modsChar) {
+				return MOD;
 			} else if (c == '=') {
 				return ASSIGN;
 			} else if (c == closeChar) {
@@ -444,7 +497,7 @@ end:
 	// Returns a pointer rather than a reference because we want the result to
 	// be nullable to denote not found.
 
-	InStream *Expander::findInStream (function<bool(const shared_ptr<InStream> &ptr)> pred)
+	InStream *Expander::findStream (function<bool(const shared_ptr<InStream> &ptr)> pred)
 	{
 		for (auto &ptr : inStreams) {
 			if (pred(ptr)) {
@@ -455,25 +508,25 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	InStream *Expander::findInStreamWithNamePrefix (const string &prefix)
+	InStream *Expander::findStreamWithNamePrefix (const string &prefix)
 	{
-		return findInStream([prefix](const shared_ptr<InStream> &ptr) {
+		return findStream([prefix](const shared_ptr<InStream> &ptr) {
 			return ptr->GetSource().compare(0, prefix.length(), prefix) == 0;
 		});
 	}
 
 	//--------------------------------------------------------------------------
-	InStream *Expander::findInStreamWithArgs ()
+	InStream *Expander::findStreamWithArgs ()
 	{
-		return findInStream([](const shared_ptr<InStream> &ptr) {
+		return findStream([](const shared_ptr<InStream> &ptr) {
 			return ptr->GetArgCount() > 0;
 		});
 	}
 
 	//--------------------------------------------------------------------------
-	InStream *Expander::findInStreamWithPath ()
+	InStream *Expander::findStreamWithPath ()
 	{
-		return findInStream([](const shared_ptr<InStream> &ptr) {
+		return findStream([](const shared_ptr<InStream> &ptr) {
 			return ptr->GetPath() != nullptr;
 		});
 	}
@@ -481,14 +534,14 @@ end:
 	//--------------------------------------------------------------------------
 	const path Expander::getCurrentPath ()
 	{
-		InStream *is = findInStreamWithPath();
+		InStream *is = findStreamWithPath();
 		return is ? path(*is->GetPath()).remove_filename() : current_path();
 	}
 
 	//--------------------------------------------------------------------------
 	int Expander::peek ()
 	{
-		return inStream().peek();
+		return currentStream().peek();
 	}
 
 	//--------------------------------------------------------------------------
@@ -499,8 +552,13 @@ end:
 		// facility and use separate putback storage. The simplest way to do it
 		// is to push a new InStream holding a single character.
 		// TODO: Optimize single-character putback to use a lighter-weight mechanism?
-		DBG("putback()\n");
-		inStreams.push_front(make_shared<CharStream>(c, inStream().GetPutbackPosition()));
+		DBG("putback(): %s\n", printchar(c));
+		Position p = currentStream().GetPutbackPosition();
+		inStreams.push_front(make_shared<CharStream>(c, p));
+		if (wasEscaped) {
+			DBG("putback(): %s\n", printchar(escapeChar));
+			inStreams.push_front(make_shared<CharStream>(escapeChar, p.Putback()));
+		}
 		return good();
 	}
 
@@ -512,7 +570,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_if (const ArgList &args)
+	bool Expander::do_if (const ArgList &args, const Mods &mods)
 	{
 		bool testResult = false;
 		if (args.size() > 0) {
@@ -543,7 +601,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_else (const ArgList &args)
+	bool Expander::do_else (const ArgList &args, const Mods &mods)
 	{
 		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
 			if (!ifContext.top().branchTaken) {
@@ -565,7 +623,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_elseif (const ArgList &args)
+	bool Expander::do_elseif (const ArgList &args, const Mods &mods)
 	{
 		if (ifContext.size() && ifContext.top().phase == IfContext::Phase::ElseOrEnd) {
 			if (!ifContext.top().branchTaken) {
@@ -601,7 +659,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_endif (const ArgList &args)
+	bool Expander::do_endif (const ArgList &args, const Mods &mods)
 	{
 		if (ifContext.size()) {
 			if (ifContext.top().isSkipping) {
@@ -616,7 +674,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_env (const ArgList &args)
+	bool Expander::do_env (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() && args[0].size()) {
 			const char *env = getenv(args[0].c_str());
@@ -631,13 +689,13 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_include (const ArgList &args)
+	bool Expander::do_include (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() && args[0].size()) {
 			const vector<string> restArgs(args.begin() + 1, args.end());
 			path p = canonical(args[0], getCurrentPath());
 			inStreams.push_front(make_shared<FileStream>(p.string(), restArgs));
-			return inStream().good();
+			return currentStream().good();
 		} else {
 			// TODO: Report error
 			return false;
@@ -645,12 +703,10 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	// TODO: support :i input modifier
-
-	bool Expander::do_equal (const ArgList &args)
+	bool Expander::do_equal (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() > 1) {
-			putback(compare(args[0], args[1]) ? "1" : "0", "Equal result");
+			putback(compare(args[0], args[1], mods.IgnoreCase) ? "1" : "0", "Equal result");
 			return true;
 		} else {
 			// TODO: Report error
@@ -660,12 +716,10 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	// TODO: support :i input modifier
-
-	bool Expander::do_notequal (const ArgList &args)
+	bool Expander::do_notequal (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() > 1) {
-			putback(!compare(args[0], args[1]) ? "1" : "0", "Notequal result");
+			putback(!compare(args[0], args[1], mods.IgnoreCase) ? "1" : "0", "Notequal result");
 			return true;
 		} else {
 			// TODO: Report error
@@ -676,12 +730,13 @@ end:
 
 	//--------------------------------------------------------------------------
 	// Uses modified ECMAScript: http://en.cppreference.com/w/cpp/regex/ecmascript
-	// TODO: support :i input modifier
 
-	bool Expander::do_match (const ArgList &args)
+	bool Expander::do_match (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() > 1) {
-			regex pattern(args[1] /*, regex_constants::icase*/);
+			regex::flag_type flags = regex_constants::ECMAScript;
+			if (mods.IgnoreCase) flags |= regex_constants::icase;
+			regex pattern(args[1], flags);
 			bool match = regex_search(args[0], pattern);
 			putback(match ? "1" : "0", "Match result");
 			return true;
@@ -693,7 +748,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_and (const ArgList &args)
+	bool Expander::do_and (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() > 1) {
 			putback(textToBool(args[0]) && textToBool(args[1]) ? "1" : "0", "And result");
@@ -706,7 +761,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_or (const ArgList &args)
+	bool Expander::do_or (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() > 1) {
 			putback(textToBool(args[0]) || textToBool(args[1]) ? "1" : "0", "Or result");
@@ -719,7 +774,7 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_not (const ArgList &args)
+	bool Expander::do_not (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() == 1) {
 			putback(!textToBool(args[0]) ? "1" : "0", "Not result");
@@ -732,14 +787,14 @@ end:
 	}
 
 	//--------------------------------------------------------------------------
-	bool Expander::do_defined (const ArgList &args)
+	bool Expander::do_defined (const ArgList &args, const Mods &mods)
 	{
 		if (args.size() == 1) {
 			bool defined = false;
 			if (is_number(args[0])) {
 				// Lookup argument to an enclosing expansion. Look for the
 				// closest 'parent' macro body and get its associated arguments.
-				InStream *baseStream = findInStreamWithArgs();
+				InStream *baseStream = findStreamWithArgs();
 				if (baseStream) {
 					int index = atoi(args[0].c_str()) - 1;
 					defined = index >= 0 && index < baseStream->GetArgCount();

@@ -1,8 +1,10 @@
 TODO:
 Report errors with file/source/line/column location
 	Best practice for reporting errors? (not fatal exceptions)
+	Unit tests for error messages
 	Enclosing position reported should be start of directive, not end
 	Whitespace putback needs start position (not important because we won't report errors in whitespace!)
+Unit tests for command line executable
 C-only interface
 Optimize putback
 	Putback to existing putback stream should not push new stream
@@ -10,21 +12,18 @@ Optimize putback
 $(and) and $(or) should be n-ary, not just binary
 Best practice for versioning executable
 Memory leak detection for unit tests
-Variable substitution:
-$(<name>:<mods>)						<mods> modify expansion, like csh
-	:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>))?
-	:n [input] do not trim whitespace from arguments before expansion
-	:l/:u change case or $(lower $(<name>))
-	:c capitalize or $(capitalize $(<name>))
-	:i [input] ignore case (for $(equals), etc.)
-	:s/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)
-	:offset[:length] substring or $(substr $(<name>),offset[,length])
-	:h returns the directory of a path (aka "head")
-	:t returns the filename of a path (aka "tail")
-	:r returns the directory and filename without the last extension (aka "root")
-	:e returns the extension of the path (aka "end")
-Allow mods to be chained, eg :h:h:e
-$(exec <shell_command>)
+$(<name>:<mods>) - modify expansion, like csh
+	Output modifiers transform result of expansion - these could also be implemented as separate built-ins instead
+		:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>)), etc.?
+		:l/:u change case or $(lower $(<name>)), etc.
+		:c capitalize or $(capitalize $(<name>))?
+		:s/match/replacement/ substitute or $(replace $(<name>),<match>,<replacement>)?
+		:offset[:length] substring or $(substr $(<name>),offset[,length])?
+		:h returns the directory of a path (aka "head")
+		:t returns the filename of a path (aka "tail")
+		:r returns the directory and filename without the last extension (aka "root")
+		:e returns the extension of the path (aka "end")
+$(exec <shell_command>)					Substitute standard output of command
 $((<expr>))								Substitute result of evaluated arithmetic expression
 $(if <expr>)							<expr> is arithmetic or logical expression (or use $(if $((x > 0))) maybe?)
 $(length <name>)						Length of macro body? Or of text argument? Need arithmetic expression 1st
@@ -40,10 +39,16 @@ Define IFS for array separator
 Array indexing
 $() macro to look up values in Excel (or Google Sheets) (or a SQL db) (or MongoDB)
 $() macro to insert a numbered line from a file (or a range of lines, with column range(s) too)
-Verbosity - report files opening/closing - file/macro/line/word/char counts - time? - expansion factor
+Verbosity
+	Report files opening/closing
+	Report macros being expanded w/ arguments
+	File/macro/line/word/char counts
+	Time?
+	Expansion factor/ratio
 Doxygen comments
 
 DONE:
+Variable substitution
 $(<name>)								<name> is just text, so can contain $() expansions too. <name> cannot contain spaces or special chars
 $$(...									Literal (escaped) "$("
 $(<name> <text>[, <text>]...)			<text> can contain $() expansions too, text can contain spaces. (Leading spaces? After single separating <space> or <tab>?)
@@ -92,3 +97,9 @@ Putback has position from original stream for each character
 Get rid of shared_ptr in InStream - InStream => BaseStream, + derived classes to hold ifstream, istringstream (including single-char putback)
 A lighter-weight putback solution for single characters
 $(include) path should be relative to current file path
+$(<name>:<mods>) - modify expansion, like csh
+	Input modifiers alter processing of arguments or change built-in behavior
+		:n [input] do not trim whitespace from arguments before expansion
+		:i [input] ignore case (for $(equals), etc.)
+		:x [input] don't expand macros in arguments - macros in arguments will be collected literally and processed when macro is expanded
+Allow mods to be chained, eg :h:h:e

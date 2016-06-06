@@ -86,7 +86,7 @@ TEST_F(StringTests, PreventLineSkipping)
 
 TEST_F(StringTests, SetCustomSpecialChars)
 {
-	expander.SetSpecialChars('%', '{', '}', ';', '\\');
+	expander.SetSpecialChars('\\', '%', '{', ';', '}');
 	expander.SetMacro("list", "[%{1}, %{2}, $(3)]");
 	string expansion = expander.Expand("%{A=aaa}\n\\%{A}: %{A}\nList: %{list one;two;three}.\nOld-style: $(list one,two,three).");
 	ASSERT_EQ("%{A}: aaa\nList: [one, two, $(3)].\nOld-style: $(list one,two,three).", expansion);
@@ -94,7 +94,7 @@ TEST_F(StringTests, SetCustomSpecialChars)
 
 TEST_F(StringTests, PreventLineSkippingWithCustomEscape)
 {
-	expander.SetSpecialChars('$', '(', ')', ',', '\\');
+	expander.SetSpecialChars('\\', '$', '(', ',', ')');
 	// Escape has to be immediately before the newline or it's just output as text
 	string expansion = expander.Expand("$(A=aaa)\\\n\t  $(B=bbb)\\ \n$(C=ccc) \\\n $(A)\n");
 	ASSERT_EQ("\n\t  \\ \n \n aaa\n", expansion);
@@ -377,4 +377,55 @@ TEST_F(StringTests, ArgDefined)
 	expander.SetMacro("A", "$(if $(defined 1), True, False), $(if $(defined 2), True, False)");
 	string expansion = expander.Expand("$(A aaa)");
 	ASSERT_EQ("True, False", expansion);
+}
+
+TEST_F(StringTests, NoExpandModifier)
+{
+	expander.SetMacro("A", "$(1), '$(2)'");
+	expander.SetMacro("B", ")");
+	string expansion = expander.Expand("($(A:x $(B),aaa)");
+	ASSERT_EQ("(), 'aaa'", expansion);
+}
+
+TEST_F(StringTests, EqualWithIgnoreCaseModifier)
+{
+	expander.SetMacro("A", "Aaa");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccC");
+	string expansion = expander.Expand("$(if $(equal:i $(A), aaAx), True, False), $(if $(equal:i $(B), Ccc), True, False)");
+	ASSERT_EQ("False, True", expansion);
+}
+
+TEST_F(StringTests, NotEqualWithIgnoreCaseModifier)
+{
+	expander.SetMacro("A", "Aaa");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccC");
+	string expansion = expander.Expand("$(if $(notequal:i $(A), Aaax), True, False), $(if $(notequal:i $(B), Ccc), True, False)");
+	ASSERT_EQ("True, False", expansion);
+}
+
+TEST_F(StringTests, MatchWithIgnoreCaseModifier)
+{
+	expander.SetMacro("A", "Aaa");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccC");
+	string expansion = expander.Expand("$(if $(match:i $(A), a*.x), True, False), $(if $(match:i $(B), C+.[a-z]), True, False)");
+	ASSERT_EQ("False, True", expansion);
+}
+
+TEST_F(StringTests, NoTrimModifier)
+{
+	expander.SetMacro("args", "'$(1)'; '$(2)'; '$(3)'; '$(4)'");
+	string expansion = expander.Expand("Args: $(args:n\tone,  two ,\nthree\t ,four \t).");
+	ASSERT_EQ("Args: 'one'; '  two '; '\nthree\t '; 'four \t'.", expansion);
+}
+
+TEST_F(StringTests, MultipleModifiers)
+{
+	expander.SetMacro("A", " aaax");
+	expander.SetMacro("B", "$(C)");
+	expander.SetMacro("C", "ccC");
+	string expansion = expander.Expand("$(if $(notequal:i:n $(A), Aaax), True, False), $(if $(notequal:i:n:x $(B), Ccc), True, False)");
+	ASSERT_EQ("False, True", expansion);
 }

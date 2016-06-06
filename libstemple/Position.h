@@ -61,9 +61,13 @@ namespace stemple
 		//----------------------------------------------------------------------
 		Position &Putback ()
 		{
-			-- Offset;
-			nextLine = Line;
-			nextColumn = Column;
+			if (Offset < 0) {
+				// TODO: Report error
+			} else {
+				-- Offset;
+				nextLine = Line;
+				nextColumn = Column;
+			}
 			return *this;
 		}
 
