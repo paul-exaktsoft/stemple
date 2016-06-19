@@ -7,7 +7,9 @@
 #ifndef __stemple__Utility__
 #define __stemple__Utility__
 
-#include "stdafx.h"
+#include <cstdarg>
+#include <memory>
+#include <string>
 
 namespace stemple
 {

@@ -137,6 +137,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileTests.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="StringTests.cpp" />
     <ClCompile Include="test.cpp" />

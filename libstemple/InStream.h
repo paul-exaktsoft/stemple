@@ -9,7 +9,12 @@
 #ifndef __stemple__InStream__
 #define __stemple__InStream__
 
-#include "stdafx.h"
+#include <fstream>
+#include <sstream>
+
+#include "ArgList.h"
+#include "Filesystem.h"
+#include "Position.h"
 
 namespace stemple
 {

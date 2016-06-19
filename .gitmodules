@@ -1,4 +1,8 @@
 [submodule "test/googletest"]
 	path = test/googletest
 	url = git@github.com:pcashdown/googletest.git
-	branch = stemple-branch
+	branch = stemple-changes
+[submodule "ctest/Unity"]
+	path = ctest/Unity
+	url = git@github.com:pcashdown/Unity.git
+	branch = stemple-changes

@@ -13,53 +13,29 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Unity">
+      <UniqueIdentifier>{66fdd06f-4a7f-42cb-ba17-8b1ba6965041}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Expander.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Unity\src\unity.h">
+      <Filter>Unity</Filter>
     </ClInclude>
-    <ClInclude Include="InStream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Macro.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stemple.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ArgList.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Utility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Position.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Filesystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cstream.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Unity\src\unity_internals.h">
+      <Filter>Unity</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="ctest.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Expander.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Unity\src\unity.c">
+      <Filter>Unity</Filter>
     </ClCompile>
-    <ClCompile Include="Position.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="stemple.cpp">
+    <ClCompile Include="CTests.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

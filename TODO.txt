@@ -5,7 +5,6 @@ Report errors with file/source/line/column location
 	Enclosing position reported should be start of directive, not end
 	Whitespace putback needs start position (not important because we won't report errors in whitespace!)
 Unit tests for command line executable
-C-only interface
 Optimize putback
 	Putback to existing putback stream should not push new stream
 	Pool of CharStreams
@@ -103,3 +102,6 @@ $(<name>:<mods>) - modify expansion, like csh
 		:i [input] ignore case (for $(equals), etc.)
 		:x [input] don't expand macros in arguments - macros in arguments will be collected literally and processed when macro is expanded
 Allow mods to be chained, eg :h:h:e
+C-only interface
+Unit tests for C-only interface
+Unit tests for file I/O

@@ -7,7 +7,7 @@
 #ifndef __stemple__Macro__
 #define __stemple__Macro__
 
-#include "stdafx.h"
+#include <string>
 
 namespace stemple
 {

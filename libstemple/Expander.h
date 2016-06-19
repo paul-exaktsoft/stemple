@@ -7,7 +7,18 @@
 #ifndef __stemple__Expander__
 #define __stemple__Expander__
 
-#include "stdafx.h"
+#include <fstream>
+#include <functional>
+#include <list>
+#include <map>
+#include <memory>
+#include <stack>
+#include <string>
+
+#include "ArgList.h"
+#include "InStream.h"
+#include "Macro.h"
+#include "Position.h"
 
 namespace stemple
 {

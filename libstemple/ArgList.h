@@ -7,7 +7,8 @@
 #ifndef __stemple__ArgList__
 #define __stemple__ArgList__
 
-#include "stdafx.h"
+#include <string>
+#include <vector>
 
 namespace stemple
 {

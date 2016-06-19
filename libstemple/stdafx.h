@@ -15,15 +15,6 @@
 #endif	// _WIN32
 
 #include <algorithm>
-#include <experimental/filesystem>
-namespace std {
-	// Assuming Filesystem will eventually be included in C++1z, so import its
-	// definitions into the std namespace for forward compatibility...
-	// NOTE: see http://stackoverflow.com/questions/9864125/c11-how-to-alias-a-function for great ideas on aliasing functions
-	using path = std::experimental::filesystem::path;
-	using std::experimental::filesystem::canonical;
-	using std::experimental::filesystem::current_path;
-}
 #include <fstream>
 #include <functional>
 #include <list>
@@ -39,9 +30,12 @@ namespace std {
 #include <cstring>
 #include <cstdlib>
 
-#include "Utility.h"
 #include "ArgList.h"
-#include "Position.h"
+#include "cstream.h"
+#include "Expander.h"
+#include "Filesystem.h"
 #include "InStream.h"
 #include "Macro.h"
-#include "Expander.h"
+#include "Position.h"
+#include "stemple.h"
+#include "Utility.h"

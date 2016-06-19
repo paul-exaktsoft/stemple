@@ -7,7 +7,9 @@
 #ifndef __stemple__Position__
 #define __stemple__Position__
 
-#include "stdafx.h"
+#include <string>
+
+#include "Utility.h"
 
 namespace stemple
 {
