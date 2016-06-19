@@ -1,10 +1,14 @@
 #include <libstemple/stemple.h>
 #include "Unity/src/unity.h"
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef _WIN32
+#include <stdio.h>
 #define strdup _strdup
+#define unlink _unlink
+#else
+#include <unistd.h>
 #endif
 
 static stemple_Expander *expander = NULL;
@@ -21,12 +25,12 @@ void tearDown (void)
 	stemple_DestroyExpander(expander);
 	expander = NULL;
 	if (tempInPathname) {
-		_unlink(tempInPathname);
+		unlink(tempInPathname);
 		free(tempInPathname);
 		tempInPathname = NULL;
 	}
 	if (tempOutPathname) {
-		_unlink(tempOutPathname);
+		unlink(tempOutPathname);
 		free(tempOutPathname);
 		tempOutPathname = NULL;
 	}
@@ -65,7 +69,7 @@ void test_ExpandFile (void)
 {
 	char *input, *expansion;
 	FILE *fin, *fout;
-	int numBytes;
+	size_t numBytes;
 
 	// Create input file
 	tempInPathname = strdup(tmpnam(NULL));	// tmpnam returns ptr to internal static buffer - subsequent calls overwrite, so copy
@@ -80,7 +84,7 @@ void test_ExpandFile (void)
 	tempOutPathname = strdup(tmpnam(NULL));
 	fout = fopen(tempOutPathname, "w+");
 	TEST_ASSERT_NOT_NULL(fout);
-
+	
 	// Do expansion
 	stemple_SetMacro(expander, "A", "aaa");
 	stemple_ExpandFile(expander, fin, tempInPathname, fout);

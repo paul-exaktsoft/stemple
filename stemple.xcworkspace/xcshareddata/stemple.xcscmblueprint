@@ -4,11 +4,13 @@
 
   },
   "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "81D8D730A82A944DF07B6494D6B82F262496D2A1" : 0,
     "76A15575C5B740800EF8E92EA66B97A276AEF659" : 0,
     "CE4359D16E375B22885CC95C0F40783D7F7232FE" : 0
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "03259BB9-1DBB-467D-9921-8F6F2E410FC1",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "81D8D730A82A944DF07B6494D6B82F262496D2A1" : "stemple\/ctest\/Unity\/",
     "76A15575C5B740800EF8E92EA66B97A276AEF659" : "stemple\/test\/googletest\/",
     "CE4359D16E375B22885CC95C0F40783D7F7232FE" : "stemple\/"
   },
@@ -20,6 +22,11 @@
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:pcashdown\/googletest.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "76A15575C5B740800EF8E92EA66B97A276AEF659"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:pcashdown\/Unity.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "81D8D730A82A944DF07B6494D6B82F262496D2A1"
     },
     {
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:pcashdown\/stemple.git",

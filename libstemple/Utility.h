@@ -1,7 +1,7 @@
 // Utility
 // Useful functions
 //
-// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
 
 #pragma once
 #ifndef __stemple__Utility__
@@ -60,7 +60,7 @@ namespace stemple
 	template<typename... Args>
 	inline void DBG (const std::string &fmt, Args... args)
 	{
-		string s = stringf(fmt, args...);
+		std::string s = stringf(fmt, args...);
 
 #if defined _WIN32
 		OutputDebugStringA(s.c_str());

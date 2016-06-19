@@ -219,6 +219,7 @@
 		DA1267911C8D6B980074C9C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = YES;
 				HEADER_SEARCH_PATHS = ..;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -228,6 +229,7 @@
 		DA1267921C8D6B980074C9C2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = YES;
 				HEADER_SEARCH_PATHS = ..;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -9,26 +9,38 @@
 /* Begin PBXBuildFile section */
 		DA1267701C8D6A2C0074C9C2 /* Expander.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DA1267671C8D6A2C0074C9C2 /* Expander.cpp */; };
 		DA1267711C8D6A2C0074C9C2 /* Expander.h in Headers */ = {isa = PBXBuildFile; fileRef = DA1267681C8D6A2C0074C9C2 /* Expander.h */; };
-		DA1267721C8D6A2C0074C9C2 /* InStream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DA1267691C8D6A2C0074C9C2 /* InStream.cpp */; };
 		DA1267731C8D6A2C0074C9C2 /* InStream.h in Headers */ = {isa = PBXBuildFile; fileRef = DA12676A1C8D6A2C0074C9C2 /* InStream.h */; };
 		DA1267741C8D6A2C0074C9C2 /* Macro.h in Headers */ = {isa = PBXBuildFile; fileRef = DA12676B1C8D6A2C0074C9C2 /* Macro.h */; };
 		DA1267751C8D6A2C0074C9C2 /* stdafx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DA12676C1C8D6A2C0074C9C2 /* stdafx.cpp */; };
 		DA1267761C8D6A2C0074C9C2 /* stdafx.h in Headers */ = {isa = PBXBuildFile; fileRef = DA12676D1C8D6A2C0074C9C2 /* stdafx.h */; };
 		DA1267771C8D6A2C0074C9C2 /* stemple.h in Headers */ = {isa = PBXBuildFile; fileRef = DA12676E1C8D6A2C0074C9C2 /* stemple.h */; };
 		DA1267781C8D6A2C0074C9C2 /* targetver.h in Headers */ = {isa = PBXBuildFile; fileRef = DA12676F1C8D6A2C0074C9C2 /* targetver.h */; };
+		DAE67AB81D162AEF00965955 /* ArgList.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE67AB11D162AEF00965955 /* ArgList.h */; };
+		DAE67AB91D162AEF00965955 /* cstream.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE67AB21D162AEF00965955 /* cstream.h */; };
+		DAE67ABA1D162AEF00965955 /* Filesystem.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE67AB31D162AEF00965955 /* Filesystem.h */; };
+		DAE67ABB1D162AEF00965955 /* Position.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DAE67AB41D162AEF00965955 /* Position.cpp */; };
+		DAE67ABC1D162AEF00965955 /* Position.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE67AB51D162AEF00965955 /* Position.h */; };
+		DAE67ABD1D162AEF00965955 /* stemple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DAE67AB61D162AEF00965955 /* stemple.cpp */; };
+		DAE67ABE1D162AEF00965955 /* Utility.h in Headers */ = {isa = PBXBuildFile; fileRef = DAE67AB71D162AEF00965955 /* Utility.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		DA1267531C8D697E0074C9C2 /* liblibstemple.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblibstemple.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA1267671C8D6A2C0074C9C2 /* Expander.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Expander.cpp; sourceTree = "<group>"; };
 		DA1267681C8D6A2C0074C9C2 /* Expander.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Expander.h; sourceTree = "<group>"; };
-		DA1267691C8D6A2C0074C9C2 /* InStream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = InStream.cpp; sourceTree = "<group>"; };
 		DA12676A1C8D6A2C0074C9C2 /* InStream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InStream.h; sourceTree = "<group>"; };
 		DA12676B1C8D6A2C0074C9C2 /* Macro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Macro.h; sourceTree = "<group>"; };
 		DA12676C1C8D6A2C0074C9C2 /* stdafx.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stdafx.cpp; sourceTree = "<group>"; };
 		DA12676D1C8D6A2C0074C9C2 /* stdafx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stdafx.h; sourceTree = "<group>"; };
 		DA12676E1C8D6A2C0074C9C2 /* stemple.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stemple.h; sourceTree = "<group>"; };
 		DA12676F1C8D6A2C0074C9C2 /* targetver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = targetver.h; sourceTree = "<group>"; };
+		DAE67AB11D162AEF00965955 /* ArgList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ArgList.h; sourceTree = "<group>"; };
+		DAE67AB21D162AEF00965955 /* cstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cstream.h; sourceTree = "<group>"; };
+		DAE67AB31D162AEF00965955 /* Filesystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Filesystem.h; sourceTree = "<group>"; };
+		DAE67AB41D162AEF00965955 /* Position.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Position.cpp; sourceTree = "<group>"; };
+		DAE67AB51D162AEF00965955 /* Position.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Position.h; sourceTree = "<group>"; };
+		DAE67AB61D162AEF00965955 /* stemple.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stemple.cpp; sourceTree = "<group>"; };
+		DAE67AB71D162AEF00965955 /* Utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utility.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,15 +73,21 @@
 		DA1267551C8D697E0074C9C2 /* libstemple */ = {
 			isa = PBXGroup;
 			children = (
+				DAE67AB11D162AEF00965955 /* ArgList.h */,
+				DAE67AB21D162AEF00965955 /* cstream.h */,
 				DA1267671C8D6A2C0074C9C2 /* Expander.cpp */,
 				DA1267681C8D6A2C0074C9C2 /* Expander.h */,
-				DA1267691C8D6A2C0074C9C2 /* InStream.cpp */,
+				DAE67AB31D162AEF00965955 /* Filesystem.h */,
 				DA12676A1C8D6A2C0074C9C2 /* InStream.h */,
 				DA12676B1C8D6A2C0074C9C2 /* Macro.h */,
+				DAE67AB41D162AEF00965955 /* Position.cpp */,
+				DAE67AB51D162AEF00965955 /* Position.h */,
 				DA12676C1C8D6A2C0074C9C2 /* stdafx.cpp */,
 				DA12676D1C8D6A2C0074C9C2 /* stdafx.h */,
+				DAE67AB61D162AEF00965955 /* stemple.cpp */,
 				DA12676E1C8D6A2C0074C9C2 /* stemple.h */,
 				DA12676F1C8D6A2C0074C9C2 /* targetver.h */,
+				DAE67AB71D162AEF00965955 /* Utility.h */,
 			);
 			name = libstemple;
 			sourceTree = SOURCE_ROOT;
@@ -81,12 +99,17 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DAE67AB81D162AEF00965955 /* ArgList.h in Headers */,
 				DA1267761C8D6A2C0074C9C2 /* stdafx.h in Headers */,
 				DA1267711C8D6A2C0074C9C2 /* Expander.h in Headers */,
 				DA1267771C8D6A2C0074C9C2 /* stemple.h in Headers */,
+				DAE67ABA1D162AEF00965955 /* Filesystem.h in Headers */,
+				DAE67ABE1D162AEF00965955 /* Utility.h in Headers */,
 				DA1267741C8D6A2C0074C9C2 /* Macro.h in Headers */,
 				DA1267781C8D6A2C0074C9C2 /* targetver.h in Headers */,
+				DAE67AB91D162AEF00965955 /* cstream.h in Headers */,
 				DA1267731C8D6A2C0074C9C2 /* InStream.h in Headers */,
+				DAE67ABC1D162AEF00965955 /* Position.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,7 +171,8 @@
 			files = (
 				DA1267701C8D6A2C0074C9C2 /* Expander.cpp in Sources */,
 				DA1267751C8D6A2C0074C9C2 /* stdafx.cpp in Sources */,
-				DA1267721C8D6A2C0074C9C2 /* InStream.cpp in Sources */,
+				DAE67ABD1D162AEF00965955 /* stemple.cpp in Sources */,
+				DAE67ABB1D162AEF00965955 /* Position.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

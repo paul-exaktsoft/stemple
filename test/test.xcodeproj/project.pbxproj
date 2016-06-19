@@ -23,6 +23,7 @@
 		DA1267F41C8E99540074C9C2 /* gtest-typed-test.cc in Sources */ = {isa = PBXBuildFile; fileRef = DA1267EB1C8E99540074C9C2 /* gtest-typed-test.cc */; };
 		DA1267F51C8E99540074C9C2 /* gtest.cc in Sources */ = {isa = PBXBuildFile; fileRef = DA1267EC1C8E99540074C9C2 /* gtest.cc */; };
 		DA12680C1C900AD80074C9C2 /* liblibstemple.a in Frameworks */ = {isa = PBXBuildFile; fileRef = DA12680B1C900AD80074C9C2 /* liblibstemple.a */; };
+		DAE67AB01D1625BC00965955 /* FileTests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DAE67AAF1D1625BC00965955 /* FileTests.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -64,6 +65,10 @@
 		DA1267EB1C8E99540074C9C2 /* gtest-typed-test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "gtest-typed-test.cc"; sourceTree = "<group>"; };
 		DA1267EC1C8E99540074C9C2 /* gtest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = gtest.cc; sourceTree = "<group>"; };
 		DA12680B1C900AD80074C9C2 /* liblibstemple.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = liblibstemple.a; path = ../libstemple/build/Debug/liblibstemple.a; sourceTree = "<group>"; };
+		DAE67AAF1D1625BC00965955 /* FileTests.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FileTests.cpp; sourceTree = "<group>"; };
+		DAE67AC01D167EE500965955 /* SubDir */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SubDir; path = Data/SubDir; sourceTree = "<group>"; };
+		DAE67AC11D167EE500965955 /* Test1.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Test1.txt; path = Data/Test1.txt; sourceTree = "<group>"; };
+		DAE67AC21D167EE500965955 /* Test4.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Test4.txt; path = Data/Test4.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,7 +103,9 @@
 		DA1267AC1C8D6D440074C9C2 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				DAE67ABF1D167EC800965955 /* Data */,
 				DA1267C01C8D6DC30074C9C2 /* googletest */,
+				DAE67AAF1D1625BC00965955 /* FileTests.cpp */,
 				DA1267C31C8D6E230074C9C2 /* stdafx.cpp */,
 				DA1267C41C8D6E230074C9C2 /* stdafx.h */,
 				DA1267C51C8D6E230074C9C2 /* StringTests.cpp */,
@@ -174,6 +181,16 @@
 			name = "New Group";
 			sourceTree = "<group>";
 		};
+		DAE67ABF1D167EC800965955 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				DAE67AC01D167EE500965955 /* SubDir */,
+				DAE67AC11D167EE500965955 /* Test1.txt */,
+				DAE67AC21D167EE500965955 /* Test4.txt */,
+			);
+			name = Data;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -231,6 +248,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DA1267F21C8E99540074C9C2 /* gtest-printers.cc in Sources */,
+				DAE67AB01D1625BC00965955 /* FileTests.cpp in Sources */,
 				DA1267DD1C8E99210074C9C2 /* gmock-cardinalities.cc in Sources */,
 				DA1267C91C8D6E230074C9C2 /* StringTests.cpp in Sources */,
 				DA1267DF1C8E99210074C9C2 /* gmock-matchers.cc in Sources */,
@@ -333,6 +351,8 @@
 		DA1267B21C8D6D440074C9C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					..,
 					googletest/googlemock/include,
@@ -346,6 +366,8 @@
 		DA1267B31C8D6D440074C9C2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					..,
 					googletest/googlemock/include,

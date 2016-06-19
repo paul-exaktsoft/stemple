@@ -5,6 +5,9 @@
       location = "group:TODO.txt">
    </FileRef>
    <FileRef
+      location = "group:ctest/ctest.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:libstemple/libstemple.xcodeproj">
    </FileRef>
    <FileRef

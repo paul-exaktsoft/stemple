@@ -11,7 +11,7 @@ int main (int argc, char **argv)
 #if 0
 	char **argv2 = new char*[argc + 1];
 	for (int i = 0; i < argc; ++ i) argv2[i] = argv[i];
-	argv2[argc] = (char *)"--gtest_filter=StringTests.ShouldNotExpandEscapedMacroInArguments";
+	argv2[argc] = (char *)"--gtest_filter=StringTests.NestedIncludes";
 	argc +=1;
 	argv = argv2;
 #endif

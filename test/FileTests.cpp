@@ -41,6 +41,7 @@ TEST_F(FileTests, Expand)
 	// Do expansion
 	expander.SetMacro("A", "aaa");
 	bool result = expander.Expand(ifs, tempInPathname, ofs);
+	ASSERT_TRUE(result);
 
 	// Rewind and read output file
 	ofs.seekg(0, ios_base::beg);

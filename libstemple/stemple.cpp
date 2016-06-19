@@ -1,7 +1,7 @@
 // stemple.cpp
 // Top-level C API for the stemple library
 //
-// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
 
 #include "stdafx.h"
 
@@ -43,7 +43,9 @@ bool stemple_ExpandFile (stemple_Expander *expander, FILE *input, const char *in
 {
 	if (expander) {
 		try {
-			return reinterpret_cast<stemple::Expander *>(expander)->Expand(stemple::cstream(input), inputName, stemple::cstream(output));
+			stemple::cstream in(input);
+			stemple::cstream out(output);
+			return reinterpret_cast<stemple::Expander *>(expander)->Expand(in, inputName, out);
 		} catch (...) {
 		}
 	}

@@ -1,7 +1,7 @@
 // Expander
 // Processes input streams looking for embedded directives and macro expansions.
 //
-// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
 
 #include "stdafx.h"
 
@@ -251,8 +251,8 @@ end:
 			{
 				args = collectArgs(mods.TrimArgs, mods.ExpandArgs);
 				tok = getToken();	// Get closing ')'
+				break;
 			}
-			break;
 			case ASSIGN:
 			case SIMPLE_ASSIGN:
 			case APPEND:
@@ -276,9 +276,9 @@ end:
 				return true;
 			}
 			case CLOSE:
-				break;
 			case END:
 			case ERR:
+			case MOD:
 				break;
 			}
 		}
