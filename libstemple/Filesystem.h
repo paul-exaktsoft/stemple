@@ -1,6 +1,6 @@
 // Filesystem
 //
-// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
 #pragma once
 #ifndef __stemple_Filesystem__

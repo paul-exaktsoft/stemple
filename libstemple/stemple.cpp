@@ -1,7 +1,7 @@
 // stemple.cpp
 // Top-level C API for the stemple library
 //
-// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
 #include "stdafx.h"
 

@@ -45,7 +45,7 @@ TEST_F(FileTests, Expand)
 
 	// Rewind and read output file
 	ofs.seekg(0, ios_base::beg);
-	std::string expansion((std::istreambuf_iterator<char>(ofs)), (std::istreambuf_iterator<char>()));
+	string expansion((istreambuf_iterator<char>(ofs)), (istreambuf_iterator<char>()));
 
 	// Check result
 	ASSERT_EQ("aaa\n", expansion);

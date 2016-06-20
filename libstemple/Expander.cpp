@@ -1,7 +1,7 @@
 // Expander
 // Processes input streams looking for embedded directives and macro expansions.
 //
-// Copyright ï¿½ 2016 by Paul Ashdown. All Rights Reserved.
+// Copyright © 2016 by Paul Ashdown. All Rights Reserved.
 
 #include "stdafx.h"
 
