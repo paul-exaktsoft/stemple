@@ -1,4 +1,5 @@
 TODO:
+Add Travis CI - ./configure & make & make test
 Report errors with file/source/line/column location
 	Best practice for reporting errors? (not fatal exceptions)
 	Unit tests for error messages
@@ -12,6 +13,8 @@ $(and) and $(or) should be n-ary, not just binary
 Best practice for versioning executable
 Memory leak detection for unit tests
 $(<name>:<mods>) - modify expansion, like csh
+	Input modifiers:
+		:a quote (escape) contents of any macros used during expansion of arguments
 	Output modifiers transform result of expansion - these could also be implemented as separate built-ins instead
 		:w trim whitespace from result after expansion (:f/:b trim front/back) or $(trim $(<name>)), etc.?
 		:l/:u change case or $(lower $(<name>)), etc.
@@ -23,10 +26,10 @@ $(<name>:<mods>) - modify expansion, like csh
 		:r returns the directory and filename without the last extension (aka "root")
 		:e returns the extension of the path (aka "end")
 $(exec <shell_command>)					Substitute standard output of command
-$((<expr>))								Substitute result of evaluated arithmetic expression
+$((<expr>))								Substitute result of evaluated arithmetic expression - use Spirit parser?
 $(if <expr>)							<expr> is arithmetic or logical expression (or use $(if $((x > 0))) maybe?)
 $(length <name>)						Length of macro body? Or of text argument? Need arithmetic expression 1st
-$(*[:<offset>[:<length>]])				All arguments (or a subset) [What separator? ' ' or ','? Or user-defined?]
+$(*[:<offset>[:<length>[,<sep>]]])		All arguments (or a subset) separated by ' ' or by user-defined char
 $(for NAME, <init>, <test>, <update>)	Uses arithmetic expressions
 $(foreach NAME, <text>[, <text>]*)...$(end)
 $(// <any_freeform_comment_text>)		Or $(rem ...)?
@@ -36,6 +39,8 @@ CMakeLists.txt
 Test building with Xcode and Linux Makefile
 Define IFS for array separator
 Array indexing
+$(now[ <format>]) current date time
+DateTime math (eg: now + 1w6d)
 $() macro to look up values in Excel (or Google Sheets) (or a SQL db) (or MongoDB)
 $() macro to insert a numbered line from a file (or a range of lines, with column range(s) too)
 Verbosity
@@ -54,7 +59,7 @@ $(<name> <text>[, <text>]...)			<text> can contain $() expansions too, text can 
 $(1), $(2), etc...						Arguments to current macro
 Google Test/Mock unit tests
 [<wspace>]$(...)[<wspace>]<nl>			Line is ignored (allows $() on a line by itself without adding a blank line to the output)
-$(<name>=<text>)						<text> can containing leading whitespace. Embedded $()s are expanded recursively when body is expanded
+$(<name>=<text>)						<text> can contain leading whitespace. Embedded $()s are expanded recursively when body is expanded
 Use variables for special chars
 [<wspace>]$(...)[<wspace>]$<nl>			Line is not ignored
 Make special characters configurable
@@ -62,7 +67,7 @@ $(<name>:=<text>)						Embedded $() are expanded once at definition time (like M
 $(<name>+=<text>)						Append
 $(<name>:+=<text>)						Append, 'simply expanded'
 $(if <expr_text>, <true_text>[, <false_text>])
-$(if <text>)						"", "0", or "false" (case insensitive) are false - everything else is true
+$(if <text>)							undefined, "", "0", "no", or "false" (case insensitive) are false - everything else is true
 $(elseif <text>)
 $(else)
 $(endif)
@@ -105,3 +110,5 @@ Allow mods to be chained, eg :h:h:e
 C-only interface
 Unit tests for C-only interface
 Unit tests for file I/O
+Output modifiers alter expansion of macro
+	:q [output] quote (escape) expanded contents

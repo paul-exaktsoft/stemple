@@ -14,7 +14,9 @@ namespace std
 {
 	// We assume filesystem will eventually be included in C++1z, so import its
 	// definitions into the std namespace for forward compatibility...
-	// NOTE: see http://stackoverflow.com/questions/9864125/c11-how-to-alias-a-function for great ideas on aliasing functions
+	// NOTE:
+	// http://stackoverflow.com/questions/9864125/c11-how-to-alias-a-function
+	// has great ideas on aliasing functions
 	using path = std::experimental::filesystem::path;
 	using std::experimental::filesystem::canonical;
 	using std::experimental::filesystem::current_path;

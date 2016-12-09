@@ -43,7 +43,8 @@ namespace stemple
 			bool TrimArgs = true;
 			bool IgnoreCase = false;
 			bool ExpandArgs = true;
-			Mods (bool trimArgs = true) : TrimArgs(trimArgs), IgnoreCase(false), ExpandArgs(true)
+			bool Quote = false;
+			Mods (bool trimArgs = true) : TrimArgs(trimArgs), IgnoreCase(false), ExpandArgs(true), Quote(false)
 			{
 			}
 		};
@@ -60,6 +61,8 @@ namespace stemple
 
 		std::string trimWhitespace (const std::string &s);
 
+		std::string escapeString (const std::string &s);
+
 		enum Token { ARGS, ASSIGN, APPEND, MOD, SIMPLE_ASSIGN, SIMPLE_APPEND, CLOSE, END, ERR };
 
 		Token collectMods (Mods &mods);
@@ -68,7 +71,7 @@ namespace stemple
 
 		inline InStream &currentStream ()
 		{
-			return *inStreams.front();
+			return *inStreams.front();	// TODO: What if inStreams is empty?
 		}
 
 		InStream *findStream (std::function<bool(const std::shared_ptr<InStream> &ptr)> pred);
@@ -120,6 +123,7 @@ namespace stemple
 		std::string modEndChars;	// Set of terminating chars
 		bool trimArgs;				// Trim whitespace from argument strings by default
 		int skipping;				// Skipping output and most expansion because we are in a false branch of a block if/elseif/else
+		int invoking;				// In the middle of gathering a macro invocation
 		bool wasEscaped;			// Last character returned by get() was escaped
 
 		// A stack of descriptors for processing nested block ifs/elseifs/elses

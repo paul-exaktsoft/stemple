@@ -16,7 +16,8 @@ namespace stemple
 	//--------------------------------------------------------------------------
 	Expander::Expander () :
 		trimArgs(true),
-		skipping(0)
+		skipping(0),
+		invoking(0)
 	{
 		SetSpecialChars('$', '$', '(', ',', ')');
 		builtins = {
@@ -42,6 +43,9 @@ namespace stemple
 	}
 
 	//--------------------------------------------------------------------------
+	// TODO: Some validation here - all characters must be distinct, except escape and intro can be the same
+	// TODO: Allow modsChar to be user-settable too
+
 	void Expander::SetSpecialChars (char escape, char intro, char open, char argSep, char close)
 	{
 		escapeChar = escape;
@@ -53,7 +57,7 @@ namespace stemple
 		(nameEndChars = " \t:+=") += closeChar;
 		(argEndChars = argSepChar) += closeChar;
 		textEndChars = closeChar;
-		modEndChars = " \t:+=";
+		(modEndChars = " \t:+=") += closeChar;
 		if (modEndChars.find(modsChar) == string::npos) modEndChars += modsChar;
 	}
 
@@ -237,7 +241,7 @@ end:
 			// If this is an elseif directive, temporarily disable skipping so
 			// we can fully expand the argument to see if this branch should be
 			// taken or not.
-			variable_guard<int> guard(skipping, name == "elseif" ? 0 : skipping);
+			variable_guard<int> restore_skipping(skipping, name == "elseif" ? 0 : skipping);
 
 			// Examine token after first word
 			Token tok = getToken();
@@ -249,6 +253,7 @@ end:
 			switch (tok) {
 			case ARGS:
 			{
+				variable_guard<int> restore_invoking(invoking, invoking + 1);
 				args = collectArgs(mods.TrimArgs, mods.ExpandArgs);
 				tok = getToken();	// Get closing ')'
 				break;
@@ -301,7 +306,13 @@ end:
 				if (baseStream) {
 					int index = atoi(name.c_str()) - 1;
 					DBG("expanding arg %s of %s at %s\n", name.c_str(), baseStream->GetSource().c_str(), introPos.GetCString());
-					putback(baseStream->GetArg(index), string("Expansion of arg ") + name + " of " + baseStream->GetSource());
+					string text = baseStream->GetArg(index);
+					if (mods.Quote) {
+						text = escapeString(text);
+					}
+					if (text.length()) {
+						putback(text, string("Expansion of arg ") + name + " of " + baseStream->GetSource());
+					}
 					return true;
 				} else {
 					DBG("empty expansion of arg %s at %s\n", name.c_str(), introPos.GetCString());
@@ -310,9 +321,12 @@ end:
 				// Lookup macro and insert replacement text if any
 				auto macroEntry = macros.find(name);
 				if (macroEntry != end(macros)) {
-					string text = macroEntry->second.GetBody();
 					DBG("expanding %s at %s:\n", name.c_str(), introPos.GetCString()); {
 						int n = 1; for (string a : args) DBG("    arg %d: %s\n", n++, a.c_str());
+					}
+					string text = macroEntry->second.GetBody();
+					if (mods.Quote) {
+						text = escapeString(text);
 					}
 					if (text.length()) {
 						putback(text, string("Expansion of ") + name, args);
@@ -391,6 +405,8 @@ end:
 				mods.IgnoreCase = true;
 			} else if (mod == "x") {
 				mods.ExpandArgs = false;
+			} else if (mod == "q") {
+				mods.Quote = true;
 			}
 			tok = getToken();
 		} while (tok == MOD);
@@ -429,6 +445,26 @@ end:
 			count = s.length() - i;
 		}
 		return s.substr(i, count);
+	}
+
+	//--------------------------------------------------------------------------
+	std::string Expander::escapeString (const std::string &s)
+	{
+		if (!s.length()) return s;
+		std::string out = "";
+		for (size_t i = 0; i < s.length(); ++ i) {
+			if (   s[i] == introChar				// Start of a directive.
+//				|| s[i] == openChar					// Start of a directive.
+				|| s[i] == closeChar && invoking	// End of a directive. Only escaped in invocation.
+				|| s[i] == argSepChar && invoking	// Separator between arguments. Only escaped in invocation.
+				|| s[i] == escapeChar				// Escapes other special chars.
+//				|| s[i] == modsChar					// The start of modifiers to expansion.
+				) {
+				out += escapeChar;
+			}
+			out += s[i];
+		}
+		return out;
 	}
 
 	//--------------------------------------------------------------------------
@@ -551,9 +587,10 @@ end:
 		// build, it always fails). So we no longer use std::istream's putback
 		// facility and use separate putback storage. The simplest way to do it
 		// is to push a new InStream holding a single character.
+		// TODO: What if c is .NUL. (EOF)? Do nothing?
 		// TODO: Optimize single-character putback to use a lighter-weight mechanism?
 		DBG("putback(): %s\n", printchar(c));
-		Position p = currentStream().GetPutbackPosition();
+		Position p = currentStream().GetPutbackPosition();	// TODO: What if there is no current stream? (end of input)
 		inStreams.push_front(make_shared<CharStream>(c, p));
 		if (wasEscaped) {
 			DBG("putback(): %s\n", printchar(escapeChar));

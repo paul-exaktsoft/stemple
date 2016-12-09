@@ -379,11 +379,28 @@ TEST_F(StringTests, ArgDefined)
 	ASSERT_EQ("True, False", expansion);
 }
 
+TEST_F(StringTests, NoNoExpandModifier)
+{
+	expander.SetMacro("A", "$(1), '$(2)'");
+	expander.SetMacro("B", ")");
+	string expansion = expander.Expand("($(A $(B),aaa)");
+	ASSERT_EQ("(, '',aaa)", expansion);
+}
+
 TEST_F(StringTests, NoExpandModifier)
 {
 	expander.SetMacro("A", "$(1), '$(2)'");
 	expander.SetMacro("B", ")");
 	string expansion = expander.Expand("($(A:x $(B),aaa)");
+	ASSERT_EQ("(), 'aaa'", expansion);
+}
+
+TEST_F(StringTests, NoExpandModifierRecursive)
+{
+	expander.SetMacro("A", "$(1), '$(2)'");
+	expander.SetMacro("B", ")");
+	expander.SetMacro("C", "$(1)");
+	string expansion = expander.Expand("($(A:x $(C $(B)),aaa)");
 	ASSERT_EQ("(), 'aaa'", expansion);
 }
 
@@ -428,4 +445,24 @@ TEST_F(StringTests, MultipleModifiers)
 	expander.SetMacro("C", "ccC");
 	string expansion = expander.Expand("$(if $(notequal:i:n $(A), Aaax), True, False), $(if $(notequal:i:n:x $(B), Ccc), True, False)");
 	ASSERT_EQ("False, True", expansion);
+}
+
+TEST_F(StringTests, NoQuoteModifier)
+{
+	expander.SetMacro("A", "1='$(1)'; 2='$(2)'; 3='$(3)'");
+	expander.SetMacro("B", ")");
+	expander.SetMacro("C", "bbb, ccc");
+	expander.SetMacro("D", "$(E xxx,yyy)");
+	string expansion = expander.Expand("$(A $(B), $(C), $(D)) - B='$(B)', C='$(C)' D='$(D)'");
+	ASSERT_EQ("1=''; 2=''; 3='', bbb, ccc, ) - B=')', C='bbb, ccc' D=''", expansion);
+}
+
+TEST_F(StringTests, QuoteModifier)
+{
+	expander.SetMacro("A", "1='$(1)'; 2='$(2)'; 3='$(3:q)'");
+	expander.SetMacro("B", ")");
+	expander.SetMacro("C", "bbb, ccc");
+	expander.SetMacro("D", "$(E xxx,yyy)");
+	string expansion = expander.Expand("$(A $(B:q), $(C:q), $(D:q)) - B='$(B:q)', C='$(C:q)' D='$(D:q)'");
+	ASSERT_EQ("1=')'; 2='bbb, ccc'; 3='$(E xxx,yyy)' - B=')', C='bbb, ccc' D='$(E xxx,yyy)'", expansion);
 }
